@@ -1,58 +1,33 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  Dimensions,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import Feather from "react-native-vector-icons/Feather";
 import io from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import InCallManager from "react-native-incall-manager";
 
 import { createPC, getAudioStream } from "../utils/webrtc";
 import { MAIN_BASE_URL } from "../api/baseUrl1";
 
-const { width } = Dimensions.get("window");
-
 const AudiocallScreen = ({ route, navigation }) => {
-  // ---------------------------
-  //      ROUTE PARAMS
-  // ---------------------------
-  const { session_id, target_id } = route?.params || {};
-
-  const [token, setToken] = useState(null);
-  const [user_id, setUserId] = useState(null);
+  const { session_id, target_id, role } = route.params;
 
   const socket = useRef(null);
   const pc = useRef(null);
   const localStream = useRef(null);
+  const initializedRef = useRef(false);
 
-  const [callConnected, setCallConnected] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [token, setToken] = useState(null);
+  const [micOn, setMicOn] = useState(true);
+  const [speakerOn, setSpeakerOn] = useState(false);
 
-  // ---------------------------
-  // LOAD TOKEN + USER_ID
-  // ---------------------------
+  /* LOAD TOKEN */
   useEffect(() => {
-    const loadUser = async () => {
-      const t = await AsyncStorage.getItem("twittoke");
-      const uid = await AsyncStorage.getItem("user_id");
-
-      setToken(t);
-      setUserId(uid);
-
-      console.log("TOKEN =>", t);
-      console.log("USER_ID =>", uid);
-    };
-    loadUser();
+    AsyncStorage.getItem("twittoke").then(setToken);
   }, []);
 
-  // ---------------------------
-  // CREATE SOCKET
-  // ---------------------------
+  /* SOCKET */
   useEffect(() => {
     if (!token) return;
 
@@ -61,238 +36,137 @@ const AudiocallScreen = ({ route, navigation }) => {
       auth: { token },
     });
 
-    console.log("SOCKET CONNECTED");
+    socket.current.on("connect", () => {
+      console.log("🔌 Socket connected");
+      socket.current.emit("audio_join", { session_id });
+    });
 
     return () => socket.current?.disconnect();
   }, [token]);
 
-  // ---------------------------
-  // INIT WEBRTC WHEN READY
-  // ---------------------------
+  /* WEBRTC */
   useEffect(() => {
-    if (!token || !socket.current || !session_id || !target_id) return;
+    if (!socket.current || initializedRef.current) return;
+    initializedRef.current = true;
 
-    initializeWebRTC();
+    initWebRTC();
 
-    return () => cleanupCall();
-  }, [token, socket.current]);
+    InCallManager.start({ media: "audio" });
+    InCallManager.setForceSpeakerphoneOn(false);
+    InCallManager.setKeepScreenOn(true);
 
-  const cleanupCall = () => {
-    try {
-      localStream.current?.getTracks().forEach((t) => t.stop());
-      pc.current?.close();
-    } catch (err) {}
-  };
+    return () => endCall();
+  }, [socket.current]);
 
-  // ---------------------------
-  // WEBRTC INITIALIZATION
-  // ---------------------------
-  const initializeWebRTC = async () => {
+  const initWebRTC = async () => {
     pc.current = createPC();
 
-    // ICE CANDIDATE
-    pc.current.onicecandidate = (event) => {
-      if (event.candidate) {
+    pc.current.onicecandidate = (e) => {
+      if (e.candidate) {
         socket.current.emit("audio_ice_candidate", {
           session_id,
-          target_id,
-          candidate: event.candidate,
+          candidate: e.candidate,
         });
       }
     };
 
-    // MICROPHONE STREAM
+    pc.current.ontrack = () => setConnected(true);
+
     localStream.current = await getAudioStream();
-    localStream.current.getTracks().forEach((track) =>
-      pc.current.addTrack(track, localStream.current)
+    localStream.current.getTracks().forEach((t) =>
+      pc.current.addTrack(t, localStream.current)
     );
 
-    listenSocketEvents();
-
-    // CALLER SENDS OFFER
-    if (user_id !== target_id) {
-      createOffer();
-    }
-  };
-
-  // ---------------------------
-  // SOCKET EVENTS
-  // ---------------------------
-  const listenSocketEvents = () => {
-    // RECEIVER GETS OFFER
-    socket.current.on("audio_offer", async ({ offer, from }) => {
+    socket.current.on("audio_offer", async ({ offer }) => {
       await pc.current.setRemoteDescription(offer);
-
       const answer = await pc.current.createAnswer();
       await pc.current.setLocalDescription(answer);
-
-      socket.current.emit("audio_answer", {
-        session_id,
-        target_id: from,
-        answer,
-      });
+      socket.current.emit("audio_answer", { session_id, answer });
     });
 
-    // CALLER GETS ANSWER
     socket.current.on("audio_answer", async ({ answer }) => {
       await pc.current.setRemoteDescription(answer);
     });
 
-    // ICE CANDIDATE
     socket.current.on("audio_ice_candidate", async ({ candidate }) => {
       await pc.current.addIceCandidate(candidate);
     });
 
-    // CALL CONNECTED
-    socket.current.on("audio_call_connected", () => {
-      setCallConnected(true);
-    });
-
-    // CALL ENDED
-    socket.current.on("audio_call_ended", () => {
-      navigation.goBack();
-    });
+    if (role === "caller") createOffer();
   };
 
-  // ---------------------------
-  // CALLER CREATES OFFER
-  // ---------------------------
   const createOffer = async () => {
     const offer = await pc.current.createOffer();
     await pc.current.setLocalDescription(offer);
-
-    socket.current.emit("audio_offer", {
-      session_id,
-      target_id,
-      offer,
-    });
+    socket.current.emit("audio_offer", { session_id, offer });
   };
 
-  // ---------------------------
-  // END CALL
-  // ---------------------------
-  const hangupCall = () => {
-    socket.current.emit("audio_call_hangup", { session_id });
+  const toggleMic = () => {
+    localStream.current?.getAudioTracks().forEach(
+      (t) => (t.enabled = !micOn)
+    );
+    setMicOn(!micOn);
+  };
+
+  const toggleSpeaker = () => {
+    InCallManager.setForceSpeakerphoneOn(!speakerOn);
+    setSpeakerOn(!speakerOn);
+  };
+
+  const endCall = () => {
+    localStream.current?.getTracks().forEach((t) => t.stop());
+    pc.current?.close();
+    InCallManager.stop({ busytone: true });
+    socket.current?.emit("audio_leave", { session_id });
     navigation.goBack();
   };
 
-  // ---------------------------
-  // UI
-  // ---------------------------
   return (
     <LinearGradient colors={["#5e007a", "#0d0017"]} style={styles.container}>
-      
-      {/* HEADER */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
+      <Text style={styles.title}>
+        {connected ? "Connected" : "Connecting..."}
+      </Text>
+
+      <View style={styles.controls}>
+        <TouchableOpacity style={styles.ctrlBtn} onPress={toggleMic}>
+          <Ionicons name={micOn ? "mic" : "mic-off"} size={28} color="#fff" />
         </TouchableOpacity>
 
-        <View>
-          <Text style={styles.userName}>User {target_id}</Text>
-          <Text style={styles.duration}>
-            {callConnected ? "Connected" : "Ringing..."}
-          </Text>
-        </View>
-
-        <View style={{ width: 40 }} />
-      </View>
-
-      {/* AVATARS */}
-      <View style={styles.avatarContainer}>
-        <View style={styles.avatarBox}>
-          <Image source={require("../assets/boy1.jpg")} style={styles.avatarImg} />
-        </View>
-
-        <View style={styles.avatarBox2}>
-          <Image source={require("../assets/girl1.jpg")} style={styles.avatarImg} />
-        </View>
-      </View>
-
-      {/* CALL BUTTON */}
-      <View style={styles.bottomButtons}>
-        <TouchableOpacity style={styles.endCallBtn} onPress={hangupCall}>
+        <TouchableOpacity style={styles.endBtn} onPress={endCall}>
           <Ionicons name="call" size={30} color="#fff" />
         </TouchableOpacity>
-      </View>
 
+        <TouchableOpacity style={styles.ctrlBtn} onPress={toggleSpeaker}>
+          <Ionicons
+            name={speakerOn ? "volume-high" : "volume-medium"}
+            size={28}
+            color="#fff"
+          />
+        </TouchableOpacity>
+      </View>
     </LinearGradient>
   );
 };
 
 export default AudiocallScreen;
 
-// ------------------ STYLES ------------------
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-
-  header: {
-    marginTop: 50,
-    paddingHorizontal: 25,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  userName: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "600",
-  },
-
-  duration: {
-    color: "#ccc",
-    marginTop: 2,
-  },
-
-  avatarContainer: {
-    marginTop: 90,
-    width: "100%",
-    alignItems: "center",
-    position: "relative",
-    height: 350,
-  },
-
-  avatarBox: {
-    width: 160,
-    height: 160,
-    backgroundColor: "#fff",
-    borderRadius: 20,
+  container: { flex: 1, justifyContent: "center", alignItems: "center" },
+  title: { color: "#fff", fontSize: 22, marginBottom: 60 },
+  controls: { flexDirection: "row", alignItems: "center", gap: 30 },
+  ctrlBtn: {
+    width: 65,
+    height: 65,
+    backgroundColor: "#444",
+    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
   },
-
-  avatarBox2: {
-    width: 160,
-    height: 160,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
-    top: 130,
-    right: width * 0.18,
-  },
-
-  avatarImg: {
-    width: "95%",
-    height: "95%",
-    borderRadius: 20,
-  },
-
-  bottomButtons: {
-    position: "absolute",
-    bottom: 40,
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center",
-  },
-
-  endCallBtn: {
-    width: 75,
-    height: 75,
+  endBtn: {
+    width: 80,
+    height: 80,
     backgroundColor: "red",
-    borderRadius: 50,
+    borderRadius: 40,
     justifyContent: "center",
     alignItems: "center",
   },

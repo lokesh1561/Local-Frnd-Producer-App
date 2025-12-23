@@ -58,6 +58,7 @@ const LocationScreen = () => {
   const [location, setLocation] = useState(null);
   const [permissionStatus, setPermissionStatus] = useState("idle");
   const [showPopup, setShowPopup] = useState(false);
+const [submitted, setSubmitted] = useState(false); // ✅ FIX
 
   /* ---------- ASK PERMISSION ---------- */
   const requestLocationPermission = async () => {
@@ -98,7 +99,7 @@ const LocationScreen = () => {
   /* ---------- SUBMIT ---------- */
   const handleContinue = () => {
     if (!location || loading) return;
-
+ setSubmitted(true);
     dispatch(
       newUserDataRequest({ location_lat: location.latitude,
         location_log: location.longitude,})
@@ -107,18 +108,19 @@ const LocationScreen = () => {
   };
 
   /* ---------- NAVIGATION ---------- */
-  useEffect(() => {
-    if (success === true) {
-      navigation.replace("GenderScreen");
-    }
-  }, [success, navigation]);
+ useEffect(() => {
+  if (submitted && success === true) {
+    navigation.replace("GenderScreen");
+  }
+}, [submitted, success, navigation]);
+
 
   /* ---------- CLEANUP ---------- */
-  useEffect(() => {
-    return () => {
-      Geolocation.stopObserving();
-    };
-  }, []);
+  // useEffect(() => {
+  //   return () => {
+  //     Geolocation.stopObserving();
+  //   };
+  // }, []);
 
   return (
     <BackgroundPagesOne>
