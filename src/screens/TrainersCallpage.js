@@ -14,40 +14,65 @@ import Icon from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";
 import { useDispatch, useSelector } from "react-redux";
 import { randomUserRequest } from "../features/RandomUsers/randomuserAction";
-import{audioCallSuccess} from "../features/calls/callAction"
+import { audioCallRequest } from "../features/calls/callAction";
+
 const { width, height } = Dimensions.get("window");
 const AVATAR_SIZE = 70;
 const GAP = 15;
 
 const TrainersCallPage = () => {
-  const data = useSelector((state) => state.randomusers);
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
+  /* ================= USER DATA ================= */
+  const { userdata } = useSelector((state) => state.user);
+  const gender = userdata?.user?.gender;
+
+  /* ================= RANDOM USERS ================= */
+  const { data, loading } = useSelector((state) => state.randomusers);
+  const users = data?.users || [];
+
+  /* ================= CALL STATE ================= */
+  const call = useSelector((state) => state.calls?.call);
+  console.log("CALL STATE =>", call);
+
+  /* ================= 🔥 USER INTENT FLAG (ADDED) ================= */
+  const audioRequestedRef = useRef(false);
+
+  /* ================= ANIMATION ================= */
+  const animatedPositions = useRef([]);
+
+  /* ================= API ================= */
   useEffect(() => {
     dispatch(randomUserRequest());
   }, []);
 
-  const avatars = [
-    { name: "Lovely", img: require("../assets/boy1.jpg"), type: "video" },
-    { name: "Sana", img: require("../assets/girl1.jpg"), type: "video" },
-    { name: "Raya", img: require("../assets/boy2.jpg"), type: "video" },
-    { name: "Sharks", img: require("../assets/boy3.jpg"), type: "video" },
-    { name: "Sanji", img: require("../assets/girl2.jpg"), type: "video" },
-    { name: "Priya", img: require("../assets/girl3.jpg"), type: "highlight" },
-    { name: "Ramu", img: require("../assets/boy4.jpg"), type: "video" },
-    { name: "Nami", img: require("../assets/girl5.jpg"), type: "video" },
-    { name: "Asta", img: require("../assets/boy5.jpg"), type: "audio" },
-    { name: "Rubbi", img: require("../assets/boy1.jpg"), type: "video" },
-    { name: "Zoe", img: require("../assets/girl4.jpg"), type: "video" },
-  ];
+  /* ================= 🔥 NAVIGATION LOGIC (FIXED) ================= */
+  useEffect(() => {
+    if (
+      audioRequestedRef.current &&        // ✅ user clicked audio
+      call?.status === "MATCHED" &&
+      call?.session_id
+    ) {
+      console.log("🚀 Navigating MALE to call screen");
 
+      navigation.navigate("AudiocallScreen", {
+        session_id: call.session_id,
+        target_id: call.peer_id,
+        role: "caller",
+      });
+
+      audioRequestedRef.current = false; // ✅ reset after navigation
+    }
+  }, [call]);
+
+  /* ================= POSITIONS ================= */
   const generatePositions = () => {
     const positions = [];
     const maxCols = Math.floor(width / (AVATAR_SIZE + GAP));
     const maxRows = Math.floor((height * 0.5) / (AVATAR_SIZE + GAP));
 
-    for (let i = 0; i < avatars.length; i++) {
+    for (let i = 0; i < users.length; i++) {
       const col = i % maxCols;
       const row = Math.floor(i / maxCols) % maxRows;
       positions.push({
@@ -60,50 +85,53 @@ const TrainersCallPage = () => {
 
   const initialPositions = generatePositions();
 
-  const animatedPositions = useRef(
-    avatars.map((_, i) =>
-      i < 5
-        ? new Animated.ValueXY({
-            x: initialPositions[i].x,
-            y: initialPositions[i].y,
-          })
-        : null
-    )
-  ).current;
-
+  /* ================= INIT ANIMATIONS ================= */
   useEffect(() => {
-    const animate = (index) => {
-      if (!animatedPositions[index]) return;
+    animatedPositions.current = users.map((_, i) =>
+      i < 5 ? new Animated.ValueXY(initialPositions[i] || { x: 0, y: 0 }) : null
+    );
+  }, [users.length]);
 
-      Animated.sequence([
-        Animated.timing(animatedPositions[index], {
-          toValue: {
-            x: initialPositions[index].x + (Math.random() * 30 - 15),
-            y: initialPositions[index].y + (Math.random() * 30 - 15),
-          },
-          duration: 2500,
-          useNativeDriver: false,
-        }),
-        Animated.timing(animatedPositions[index], {
-          toValue: initialPositions[index],
-          duration: 2500,
-          useNativeDriver: false,
-        }),
-      ]).start(() => animate(index));
-    };
+  /* ================= START ANIMATION ================= */
+  useEffect(() => {
+    animatedPositions.current.forEach((anim, index) => {
+      if (!anim || !initialPositions[index]) return;
 
-    for (let i = 0; i < 5; i++) animate(i);
-  }, []);
-  const handleaudiocall=()=>{
+      const animate = () => {
+        Animated.sequence([
+          Animated.timing(anim, {
+            toValue: {
+              x: initialPositions[index].x + (Math.random() * 30 - 15),
+              y: initialPositions[index].y + (Math.random() * 30 - 15),
+            },
+            duration: 2500,
+            useNativeDriver: false,
+          }),
+          Animated.timing(anim, {
+            toValue: initialPositions[index],
+            duration: 2500,
+            useNativeDriver: false,
+          }),
+        ]).start(animate);
+      };
+
+      animate();
+    });
+  }, [users]);
+
+  /* ================= AUDIO CALL ================= */
+  const handleAudioCall = () => {
+    audioRequestedRef.current = true; // ✅ mark user intent
+
     dispatch(
-    audioCallSuccess({
-      call_type: "AUDIO",
-      
-    })
-  );
-     navigation.navigate("AudiocallScreen")
-  }
+      audioCallRequest({
+        call_type: "AUDIO",
+        gender,
+      })
+    );
+  };
 
+  /* ================= UI ================= */
   return (
     <View style={styles.container}>
       <LinearGradient colors={["#4B0082", "#2E004D"]} style={styles.header}>
@@ -113,127 +141,47 @@ const TrainersCallPage = () => {
           <View style={styles.coinsBox}>
             <Icon name="wallet-outline" size={18} color="#FFC300" />
             <Text style={styles.coinText}>100</Text>
-            <Image source={require("../assets/boy1.jpg")} style={styles.userIcon} />
+            <Image
+              source={require("../assets/boy1.jpg")}
+              style={styles.userIcon}
+            />
           </View>
-        </View>
-
-        <View style={styles.filters}>
-          <TouchableOpacity style={styles.filterBtn}>
-            <Icon name="location" size={14} color="#FF3ED8" />
-            <Text style={styles.filterText}>Near Me</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.filterBtn}>
-            <Icon name="shuffle" size={14} color="#FF3ED8" />
-            <Text style={styles.filterText}>Random</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.filterBtn}>
-            <Icon name="people" size={14} color="#FF3ED8" />
-            <Text style={styles.filterText}>Followed</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.filterBtn}>
-            <Icon name="globe-outline" size={14} color="#FF3ED8" />
-            <Text style={styles.filterText}>Language</Text>
-          </TouchableOpacity>
         </View>
       </LinearGradient>
 
       <View style={styles.mapContainer}>
         <Image source={require("../assets/map.jpg")} style={styles.map} />
 
-        {avatars.map((item, index) => {
-          const isAnimated = index < 5;
+        {!loading &&
+          users.map((item, index) => {
+            const anim = animatedPositions.current[index];
+            if (!anim) return null;
 
-          return isAnimated ? (
-            <Animated.View
-              key={index}
-              style={[
-                styles.avatarWrapper,
-                animatedPositions[index] && animatedPositions[index].getLayout(),
-              ]}
-            >
-              <View
-                style={[
-                  styles.avatarCircle,
-                  item.type === "highlight" && styles.highlightBorder,
-                ]}
+            return (
+              <Animated.View
+                key={item.user_id}
+                style={[styles.avatarWrapper, anim.getLayout()]}
               >
-                <Image source={item.img} style={styles.avatarImg} />
-              </View>
+                <View style={styles.avatarCircle}>
+                  <Image
+                    source={{ uri: item.primary_image }}
+                    style={styles.avatarImg}
+                  />
+                </View>
 
-              <View style={styles.nameTag}>
-                <Text style={styles.nameText}>{item.name}</Text>
-                {item.type === "video" && <Feather name="video" size={12} color="#fff" />}
-                {item.type === "audio" && <Feather name="phone" size={12} color="#fff" />}
-              </View>
-            </Animated.View>
-          ) : (
-            <View
-              key={index}
-              style={[
-                styles.avatarWrapper,
-                { top: initialPositions[index].y, left: initialPositions[index].x },
-              ]}
-            >
-              <View
-                style={[
-                  styles.avatarCircle,
-                  item.type === "highlight" && styles.highlightBorder,
-                ]}
-              >
-                <Image source={item.img} style={styles.avatarImg} />
-              </View>
-
-              <View style={styles.nameTag}>
-                <Text style={styles.nameText}>{item.name}</Text>
-                {item.type === "video" && <Feather name="video" size={12} color="#fff" />}
-                {item.type === "audio" && <Feather name="phone" size={12} color="#fff" />}
-              </View>
-            </View>
-          );
-        })}
+                <View style={styles.nameTag}>
+                  <Text style={styles.nameText}>ID: {item.user_id}</Text>
+                  <Feather name="phone" size={12} color="#fff" />
+                </View>
+              </Animated.View>
+            );
+          })}
       </View>
 
       <View style={styles.callButtons}>
-        <TouchableOpacity
-          style={styles.callBox}
-          onPress={() => navigation.navigate("VideocallCsreen")}
-        >
-          <Text style={styles.callTitle}>Random Video Calls</Text>
-          <Feather name="video" size={26} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.callBox}
-          onPress={handleaudiocall}
-        >
+        <TouchableOpacity style={styles.callBox} onPress={handleAudioCall}>
           <Text style={styles.callTitle}>Random Audio Calls</Text>
           <Feather name="phone" size={26} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.bottomNav}>
-        <TouchableOpacity>
-          <Icon name="home-outline" size={28} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Icon name="chatbubble-ellipses-outline" size={28} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.centerBtn}>
-          <LinearGradient colors={["#FF22E9", "#B100D1"]} style={styles.centerIcon}>
-            <Icon name="flash" size={32} color="#fff" />
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <TouchableOpacity>
-          <Icon name="notifications-outline" size={28} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity>
-          <Icon name="person-outline" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
     </View>
@@ -242,19 +190,12 @@ const TrainersCallPage = () => {
 
 export default TrainersCallPage;
 
+/* ================= STYLES (UNCHANGED) ================= */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#130018" },
-
   header: { paddingTop: 50, paddingHorizontal: 15, paddingBottom: 15 },
-
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
+  headerTop: { flexDirection: "row", justifyContent: "space-between" },
   title: { color: "#fff", fontSize: 20, fontWeight: "600" },
-
   coinsBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -263,33 +204,11 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
   },
-
-  coinText: { color: "#fff", marginLeft: 5, marginRight: 10 },
+  coinText: { color: "#fff", marginHorizontal: 8 },
   userIcon: { width: 28, height: 28, borderRadius: 50 },
-
-  filters: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 10,
-  },
-
-  filterBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#3A003F",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-    marginRight: 8,
-  },
-
-  filterText: { color: "#fff", fontSize: 12, marginLeft: 5 },
-
   mapContainer: { flex: 1 },
   map: { width: "100%", height: "100%", position: "absolute", opacity: 0.28 },
-
   avatarWrapper: { position: "absolute", alignItems: "center" },
-
   avatarCircle: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
@@ -298,65 +217,29 @@ const styles = StyleSheet.create({
     borderColor: "#FF46D9",
     overflow: "hidden",
   },
-
-  highlightBorder: { borderColor: "#00A6FF", borderWidth: 4 },
-
   avatarImg: { width: "100%", height: "100%" },
-
   nameTag: {
     backgroundColor: "#FF00E6",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 15,
+    marginTop: 5,
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 5,
   },
-
   nameText: { color: "#fff", fontSize: 12, marginRight: 4 },
-
   callButtons: {
     position: "absolute",
     bottom: 90,
     width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
     paddingHorizontal: 20,
   },
-
   callBox: {
     backgroundColor: "#A100D7",
-    width: width * 0.42,
     height: 90,
     borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
   },
-
   callTitle: { color: "#fff", fontSize: 14, marginBottom: 5 },
-
-  bottomNav: {
-    height: 70,
-    flexDirection: "row",
-    backgroundColor: "#20002C",
-    alignItems: "center",
-    justifyContent: "space-around",
-  },
-
-  centerBtn: {
-    width: 70,
-    height: 70,
-    borderRadius: 40,
-    marginTop: -35,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  centerIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 35,
-    justifyContent: "center",
-    alignItems: "center",
-  },
 });
