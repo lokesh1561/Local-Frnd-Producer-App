@@ -1,92 +1,153 @@
-import React, { useEffect, useRef } from "react";
-import { useNavigation } from "@react-navigation/native";
+import React, { useContext, useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
-  Dimensions,
-  Animated,
+  FlatList,
+  Alert,
 } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Icon from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";
 import { useDispatch, useSelector } from "react-redux";
-import { randomUserRequest } from "../features/RandomUsers/randomuserAction";
 import { audioCallRequest } from "../features/calls/callAction";
-import { io } from "socket.io-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { MAIN_BASE_URL } from "../api/baseUrl1";
+import { SocketContext } from "../socket/SocketProvider";
 
-const { width, height } = Dimensions.get("window");
-const AVATAR_SIZE = 70;
-const GAP = 15;
-
-const TrainersCallPage = () => {
-  const navigation = useNavigation();
+const TrainersCallPage = ({ navigation }) => {
+  /* ================= HOOKS (ORDER MATTERS) ================= */
   const dispatch = useDispatch();
-  const socketRef = useRef(null);
+  const socketRef = useContext(SocketContext);
+  const socket = socketRef?.current;
 
-  const gender = useSelector(
-    (state) => state.user?.userdata?.user?.gender
-  );
+  const { userdata } = useSelector((state) => state.user);
 
+  /* ================= DERIVED DATA ================= */
+  const myId = userdata?.user?.user_id;
+  const gender = userdata?.user?.gender; // "Male"
+
+  /* ================= LOCAL STATE ================= */
+  const [callingRandom, setCallingRandom] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+
+  /* ================= SOCKET: CALL MATCHED ================= */
   useEffect(() => {
-    dispatch(randomUserRequest());
-  }, []);
+    if (!socket) return;
 
-  /* SOCKET (JWT AUTH) */
-  useEffect(() => {
-    AsyncStorage.getItem("twittoke").then((token) => {
-      if (!token) return;
+    const onMatched = (data) => {
+      console.log("📥 FE(MALE) call_matched:", data);
+      setCallingRandom(false); // reset state
+      navigation.replace("AudiocallScreen", data);
+    };
 
-      socketRef.current = io(MAIN_BASE_URL, {
-        transports: ["websocket"],
-        auth: { token },
-      });
+    socket.on("call_matched", onMatched);
 
-      socketRef.current.on("call_ready", (data) => {
-        navigation.navigate("AudiocallScreen", {
-          session_id: data.session_id,
-          role: data.role,
-        });
-      });
+    return () => {
+      socket.off("call_matched", onMatched);
+    };
+  }, [socket, navigation]);
+
+  /* ================= RANDOM AUDIO CALL ================= */
+  const startRandomAudioCall = () => {
+    if (callingRandom) return;
+
+    if (!gender) {
+      Alert.alert(
+        "Profile incomplete",
+        "Please update your gender to start a call."
+      );
+      return;
+    }
+
+    setCallingRandom(true);
+
+    console.log("📤 FE → dispatch audioCallRequest", {
+      gender,
+      type: "AUDIO",
     });
 
-    return () => socketRef.current?.disconnect();
-  }, []);
-
-  const handleAudioCall = () => {
-    dispatch(audioCallRequest({ call_type: "AUDIO", gender }));
+    dispatch(
+      audioCallRequest({
+        call_type: "AUDIO",
+        gender, // "Male"
+      })
+    );
   };
 
-  /* animation logic untouched */
+  /* ================= DIRECT CALL (OPTIONAL) ================= */
+  const startCallWithUser = (targetUserId) => {
+    dispatch(
+      audioCallRequest({
+        call_type: "AUDIO",
+        target_user_id: targetUserId,
+      })
+    );
+  };
 
+  /* ================= UI HELPERS ================= */
+  const renderUser = ({ item }) => (
+    <TouchableOpacity
+      style={styles.callBox}
+      onPress={() => startCallWithUser(item)}
+    >
+      <Text style={styles.callTitle}>User ID: {item}</Text>
+      <Feather name="phone" size={22} color="#fff" />
+    </TouchableOpacity>
+  );
+
+  /* ================= UI ================= */
   return (
     <View style={styles.container}>
+      {/* HEADER */}
       <LinearGradient colors={["#4B0082", "#2E004D"]} style={styles.header}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Personal Training</Text>
+
           <View style={styles.wallet}>
             <Icon name="wallet-outline" size={18} color="#FFC300" />
-            <Text style={styles.walletText}>100</Text>
+            <Text style={styles.walletText}>Coins</Text>
           </View>
         </View>
       </LinearGradient>
 
-      <View style={styles.callBtnWrapper}>
-        <TouchableOpacity style={styles.callBox} onPress={handleAudioCall}>
-          <Text style={styles.callTitle}>Random Audio Call</Text>
-          <Feather name="phone" size={26} color="#fff" />
+      {/* RANDOM AUDIO CALL */}
+      <View style={styles.randomWrapper}>
+        <TouchableOpacity
+          style={[
+            styles.randomButton,
+            callingRandom && { opacity: 0.6 },
+          ]}
+          onPress={startRandomAudioCall}
+          disabled={callingRandom}
+        >
+          <Feather name="phone-call" size={26} color="#fff" />
+          <Text style={styles.randomText}>
+            {callingRandom ? "Connecting…" : "Random Audio Call"}
+          </Text>
         </TouchableOpacity>
+      </View>
+
+      {/* ONLINE USERS (OPTIONAL) */}
+      <View style={styles.listWrapper}>
+        {onlineUsers.length === 0 ? (
+          <Text style={styles.emptyText}>
+            No users online right now
+          </Text>
+        ) : (
+          <FlatList
+            data={onlineUsers.filter(
+              (id) => String(id) !== String(myId)
+            )}
+            keyExtractor={(item) => String(item)}
+            renderItem={renderUser}
+          />
+        )}
       </View>
     </View>
   );
-};        
+};
 
 export default TrainersCallPage;
-
 
 /* ================= STYLES ================= */
 const styles = StyleSheet.create({
@@ -94,99 +155,68 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#130018",
   },
-
   header: {
     paddingTop: 50,
     paddingBottom: 15,
     paddingHorizontal: 15,
   },
-
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
   },
-
   title: {
     color: "#fff",
     fontSize: 20,
     fontWeight: "600",
   },
-
   wallet: {
     flexDirection: "row",
-    alignItems: "center",
     backgroundColor: "#3A003F",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    padding: 8,
     borderRadius: 20,
   },
-
   walletText: {
     color: "#fff",
     marginLeft: 6,
   },
-
-  mapContainer: {
-    flex: 1,
+  randomWrapper: {
+    padding: 20,
   },
-
-  loading: {
-    color: "#fff",
-    textAlign: "center",
-    marginTop: 30,
-  },
-
-  avatarWrapper: {
-    position: "absolute",
-    alignItems: "center",
-  },
-
-  avatarCircle: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    borderWidth: 3,
-    borderColor: "#FF46D9",
-    overflow: "hidden",
-  },
-
-  avatar: {
-    width: "100%",
-    height: "100%",
-  },
-
-  nameTag: {
-    backgroundColor: "#FF00E6",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 15,
-    marginTop: 5,
-  },
-
-  nameText: {
-    color: "#fff",
-    fontSize: 12,
-  },
-
-  callBtnWrapper: {
-    position: "absolute",
-    bottom: 40,
-    width: "100%",
-    paddingHorizontal: 20,
-  },
-
-  callBox: {
+  randomButton: {
     backgroundColor: "#A100D7",
-    height: 80,
+    height: 70,
     borderRadius: 16,
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
+    gap: 12,
+  },
+  randomText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  listWrapper: {
+    flex: 1,
+    padding: 20,
+  },
+  callBox: {
+    backgroundColor: "#6A00A8",
+    height: 65,
+    borderRadius: 14,
+    marginBottom: 15,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
   },
-
   callTitle: {
     color: "#fff",
-    fontSize: 14,
-    marginBottom: 6,
+    fontSize: 15,
+  },
+  emptyText: {
+    color: "#aaa",
+    textAlign: "center",
+    marginTop: 40,
   },
 });

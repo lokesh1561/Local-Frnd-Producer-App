@@ -1,6 +1,4 @@
-// ReciverHomeScreen.js (Female)
-
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import {
   View,
   Text,
@@ -11,77 +9,86 @@ import {
 } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Icon from "react-native-vector-icons/Ionicons";
-import { useNavigation } from "@react-navigation/native";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { audioCallRequest } from "../features/calls/callAction";
-import { io } from "socket.io-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { MAIN_BASE_URL } from "../api/baseUrl1";
+import { SocketContext } from "../socket/SocketProvider";
 
-const WAIT_TIMEOUT = 60 * 1000;
+const WAIT_TIMEOUT = 60000;
 
-const ReciverHomeScreen = () => {
-  const navigation = useNavigation();
+const ReciverHomeScreen = ({ navigation }) => {
+  /* ================= HOOKS (ORDER MUST NEVER CHANGE) ================= */
   const dispatch = useDispatch();
+  const socketRef = useContext(SocketContext);
+  const socket = socketRef?.current;
 
-  const socketRef = useRef(null);
   const timeoutRef = useRef(null);
+  const navigatingRef = useRef(false);
 
-  const [showModal, setShowModal] = useState(false);
   const [waiting, setWaiting] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-  const gender = useSelector((s) => s.auth?.Otp?.user?.gender);
-  const myId = useSelector((s) => s.auth?.Otp?.user?.user_id);
-
-  /* ================= SOCKET ================= */
+  /* ================= PRESENCE ================= */
   useEffect(() => {
-    let active = true;
+    if (!socket) return;
 
-    (async () => {
-      const token = await AsyncStorage.getItem("twittoke");
-      if (!token || !active) return;
+    const onPresence = (data) => {
+      console.log("👤 FE(FEMALE) Presence:", data.user_id, data.status);
+    };
 
-      if (socketRef.current) return;
+    socket.on("presence_update", onPresence);
 
-      socketRef.current = io(MAIN_BASE_URL, {
-        transports: ["websocket"],
-        auth: { token },
-      });
+    return () => socket.off("presence_update", onPresence);
+  }, [socket]);
 
-      socketRef.current.on("call_matched", (data) => {
-        clearTimeout(timeoutRef.current);
-        setWaiting(false);
+  /* ================= CALL MATCHED ================= */
+  useEffect(() => {
+    if (!socket) return;
 
-        navigation.navigate("AudiocallScreen", {
-          session_id: data.session_id,
-          role: data.role,
-          peer_id: data.peer_id,
-          my_id: myId,
-        });
-      });
-    })();
+    const onMatched = (data) => {
+      if (navigatingRef.current) return;
+
+      navigatingRef.current = true;
+
+      console.log("📥 FE(FEMALE) call_matched:", data);
+
+      clearTimeout(timeoutRef.current);
+      setWaiting(false);
+
+      navigation.replace("AudiocallScreen", data);
+    };
+
+    socket.on("call_matched", onMatched);
 
     return () => {
-      active = false;
+      socket.off("call_matched", onMatched);
       clearTimeout(timeoutRef.current);
-      socketRef.current?.disconnect();
-      socketRef.current = null;
     };
-  }, []);
+  }, [socket, navigation]);
 
-  /* ================= AUDIO ================= */
-  const handleAudio = () => {
+  /* ================= GO ONLINE ================= */
+  const handleGoOnline = () => {
+    if (!socket || !socket.connected || waiting) return;
+
+    navigatingRef.current = false;
     setShowModal(false);
     setWaiting(true);
 
-    dispatch(audioCallRequest({ call_type: "AUDIO", gender }));
+    console.log("📤 FE(FEMALE) → dispatch random-connect");
+
+    dispatch(
+      audioCallRequest({
+        call_type: "AUDIO",
+        gender: "Female", // 🔥 EXPLICIT & INTENTIONAL
+      })
+    );
 
     timeoutRef.current = setTimeout(() => {
+      console.log("⏳ FE(FEMALE) wait timeout");
       setWaiting(false);
-      alert("No users available right now.");
     }, WAIT_TIMEOUT);
   };
 
+  /* ================= UI ================= */
   return (
     <SafeAreaView style={styles.safe}>
       <LinearGradient colors={["#6a007a", "#3b003f"]} style={styles.header}>
@@ -89,24 +96,36 @@ const ReciverHomeScreen = () => {
       </LinearGradient>
 
       <View style={styles.middle}>
-        <TouchableOpacity disabled={waiting} onPress={() => setShowModal(true)}>
-          <LinearGradient
-            colors={waiting ? ["#555", "#333"] : ["#ff2fd2", "#b000ff"]}
-            style={styles.onlineBtn}
-          >
-            <Icon name="radio" size={36} color="#fff" />
-            <Text style={styles.onlineText}>
-              {waiting ? "WAITING…" : "GO ONLINE"}
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+        {!waiting ? (
+          <TouchableOpacity onPress={() => setShowModal(true)}>
+            <LinearGradient
+              colors={["#ff2fd2", "#b000ff"]}
+              style={styles.onlineBtn}
+            >
+              <Icon name="radio" size={34} color="#fff" />
+              <Text style={styles.onlineText}>GO ONLINE</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.waitingText}>Waiting for call… 📞</Text>
+        )}
       </View>
 
-      <Modal transparent visible={showModal}>
+      {/* MODAL */}
+      <Modal transparent visible={showModal} animationType="fade">
         <View style={styles.modalOverlay}>
-          <TouchableOpacity style={styles.callBtn} onPress={handleAudio}>
-            <Text style={{ color: "#fff" }}>Audio Call</Text>
-          </TouchableOpacity>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Go Online?</Text>
+
+            <TouchableOpacity style={styles.callBtn} onPress={handleGoOnline}>
+              <Icon name="call-outline" size={26} color="#fff" />
+              <Text style={styles.callText}>Audio Call</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setShowModal(false)}>
+              <Text style={styles.closeText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -115,28 +134,76 @@ const ReciverHomeScreen = () => {
 
 export default ReciverHomeScreen;
 
+/* ================= STYLES ================= */
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#2a002d" },
-  header: { padding: 20 },
-  appName: { color: "#fff", fontSize: 22 },
-  middle: { flex: 1, justifyContent: "center", alignItems: "center" },
-  onlineBtn: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
+  safe: {
+    flex: 1,
+    backgroundColor: "#0A001A",
+  },
+  header: {
+    padding: 20,
+    alignItems: "center",
+  },
+  appName: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  middle: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  onlineText: { color: "#fff", marginTop: 10 },
+  onlineBtn: {
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+    borderRadius: 40,
+    alignItems: "center",
+  },
+  onlineText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 10,
+  },
+  waitingText: {
+    color: "#fff",
+    fontSize: 18,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
   },
+  modalBox: {
+    backgroundColor: "#1a0033",
+    padding: 25,
+    borderRadius: 20,
+    width: "80%",
+    alignItems: "center",
+  },
+  modalTitle: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 20,
+  },
   callBtn: {
-    padding: 20,
-    backgroundColor: "#6a007a",
-    borderRadius: 12,
+    flexDirection: "row",
+    backgroundColor: "#ff00ff",
+    padding: 15,
+    borderRadius: 30,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  callText: {
+    color: "#fff",
+    fontSize: 16,
+    marginLeft: 10,
+  },
+  closeText: {
+    color: "#aaa",
+    marginTop: 10,
   },
 });
