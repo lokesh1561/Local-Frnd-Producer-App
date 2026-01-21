@@ -12,7 +12,7 @@ import BackgroundPagesOne from "../components/BackgroundPages/BackgroundPagesOne
 import { useDispatch } from "react-redux";
 import { newUserDataRequest } from "../features/user/userAction";
 import{ useravatarapifetchrequest} from"../features/Avatars/avatarsAction"
-
+import WelcomeScreenbackgroungpage from"../components/BackgroundPages/WelcomeScreenbackgroungpage"
 const { width } = Dimensions.get("window");
 
 const GenderScreen = ({ navigation }) => {
@@ -34,11 +34,13 @@ const GenderScreen = ({ navigation }) => {
   };
 
   return (
-    <BackgroundPagesOne>
+    <WelcomeScreenbackgroungpage>
       <View style={styles.container}>
         {/* Logo */}
-        <AnimatedLogo />
-
+<Image
+          source={require("../components/BackgroundPages/main_log1.png")}
+          style={styles.logo}
+        />
         {/* Title */}
         <Text style={styles.title}>Select your gender</Text>
 
@@ -89,7 +91,7 @@ const GenderScreen = ({ navigation }) => {
           <Text style={styles.buttonText}>Continue</Text>
         </Pressable>
       </View>
-    </BackgroundPagesOne>
+    </WelcomeScreenbackgroungpage>
   );
 };
 
@@ -104,7 +106,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
   },
-
+ logo: {
+    width: 100,
+    height: 120,
+  // marginLeft:100,
+    resizeMode: "contain",
+    // marginBottom: 100,
+    margin:100
+  },
   title: {
     color: "#fff",
     fontSize: 31,

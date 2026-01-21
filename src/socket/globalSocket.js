@@ -5,7 +5,7 @@ import { MAIN_BASE_URL } from "../api/baseUrl1";
 
 let socket = null;
 
-export const getSocket = async () => {
+export const createSocket = async () => {
   if (socket) return socket;
 
   const token = await AsyncStorage.getItem("twittoke");
@@ -16,28 +16,32 @@ export const getSocket = async () => {
     auth: { token },
     reconnection: true,
     reconnectionAttempts: Infinity,
-    reconnectionDelay: 1000,
-    forceNew: false,
-    autoConnect: true,
-  });
-
-  socket.on("connect", () => {
-    console.log("🔌 Socket connected:", socket.id);
-  });
-
-  socket.on("disconnect", (reason) => {
-    console.log("⚠️ Socket disconnected:", reason);
+    reconnectionDelay: 2000,
+    pingInterval: 25000,
+    pingTimeout: 60000,
   });
 
   return socket;
 };
 
-export const closeSocket = () => {
+export const getSocket = () => socket;
+
+export const destroySocket = () => {
   if (socket) {
     socket.disconnect();
     socket = null;
   }
 };
+
+
+export const disconnectSocketOnLogout = () => {
+  if (socket) {
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
+  }
+};
+
 
 export const connectSocketAfterLogin = async () => {
   if (socket) {
@@ -46,6 +50,3 @@ export const connectSocketAfterLogin = async () => {
   }
   return await getSocket();
 };
-export const disconnectSocketOnLogout = () => {
-  closeSocket();
-} 

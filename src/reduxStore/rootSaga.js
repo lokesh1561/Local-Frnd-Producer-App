@@ -6,6 +6,7 @@ import randomuserSaga from "../features/RandomUsers/randomuserSaga";
 import callsSaga from "../features/calls/callSaga"
 import languageSaga from "../features/language/languageSaga"
 import avatarsSaga from "../features/Avatars/avatarsSaga";
+import locationSaga from "../features/Countries/locationSaga"
 export default function* rootSaga() {
   yield all([
     authSaga(),
@@ -14,7 +15,7 @@ export default function* rootSaga() {
     randomuserSaga(),
     callsSaga(),
     languageSaga(),
-    avatarsSaga()
-
+    avatarsSaga(),
+    locationSaga()
   ]);
 }

@@ -74,13 +74,13 @@ const styles = StyleSheet.create({
   },
 
   animatedLogo: {
-    marginTop: -height * 0.07,   // ⬆️ pushes logo up
+    marginTop: -height * 0.07,   
     marginBottom: height * 0.02,
   },
 
   midcontent: {
-  marginTop: -height * 0.03,     // space from top
-  marginBottom: height * 0.05,  // space from bottom
+  marginTop: -height * 0.03,   
+  marginBottom: height * 0.05,  
   alignItems: 'center',
 },
 

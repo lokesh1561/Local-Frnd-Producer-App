@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef } from "react";
+import React, { useContext, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,9 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  TextInput,
 } from "react-native";
+import WelcomeScreenbackgroungpage from"../components/BackgroundPages/WelcomeScreenbackgroungpage"
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
@@ -21,24 +23,33 @@ const wp = (v) => (width * v) / 100;
 const hp = (v) => (height * v) / 100;
 const iconSize = (v) => wp(v);
 
-/* ================= DUMMY ACTIVE PALS ================= */
+/* ================= STORIES + ACTIVE USERS ================= */
 const activePals = [
   { id: 1, name: "Aadhya", img: require("../assets/girl1.jpg") },
   { id: 2, name: "Yuvaan", img: require("../assets/boy1.jpg") },
   { id: 3, name: "Luna", img: require("../assets/girl2.jpg") },
   { id: 4, name: "Hannah", img: require("../assets/girl3.jpg") },
+  { id: 5, name: "Aarav", img: require("../assets/boy2.jpg") },
 ];
 
+/* ================= OFFERS ================= */
+const offers = [
+  { id: 1, text: "Buy 100 Coins, Get 20 Free!" },
+  { id: 2, text: "Buy 200 Coins, Get 50 Free!" },
+  { id: 3, text: "Buy 500 Coins, Get 150 Free!" },
+];
+
+/* =======================================================
+   HOMESCREEN COMPONENT (LOGIC NOT MODIFIED)
+======================================================= */
 const HomeScreen = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-const socketRef=useContext(SocketContext)
-const socket= socketRef?.current;
+  const socketRef = useContext(SocketContext);
+  const socket = socketRef?.current;
 
   const { userdata } = useSelector((state) => state.user);
-
   const profilePhotoURL = userdata?.primary_image?.photo_url;
-
   const imageUrl = profilePhotoURL
     ? { uri: profilePhotoURL }
     : require("../assets/boy2.jpg");
@@ -48,54 +59,45 @@ const socket= socketRef?.current;
     dispatch(userDatarequest());
   }, []);
 
-  /* ================= SOCKET (GLOBAL) ================= */
- useEffect(() => {
+  /* ================= SOCKET LISTENERS ================= */
+  useEffect(() => {
     if (!socket) return;
-
     const onPresence = (data) => {
       console.log("👤 Presence:", data.user_id, data.status);
     };
-
     socket.on("presence_update", onPresence);
-
     return () => {
       socket.off("presence_update", onPresence);
     };
   }, [socket]);
 
+  /* ================= UI RENDER ================= */
   return (
-    <View style={{ flex: 1, backgroundColor: "#0A001A" }}>
+    <WelcomeScreenbackgroungpage>
+
+    <View style={styles.root}>
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
-      >
+        >
         {/* ================= HEADER ================= */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.appTitle}>Local Friend</Text>
-            <Text style={styles.subText}>
-              Start with charm, stay for connection!
-            </Text>
-          </View>
-
-          <View style={styles.rightHeader}>
-            <TouchableOpacity style={{ marginRight: wp(3) }}>
-              <Icon name="bell-outline" size={iconSize(6)} color="#fff" />
-            </TouchableOpacity>
-
-            {/* COINS */}
-            <View style={styles.coinBox}>
-              <Icon
-                name="currency-eth"
-                size={iconSize(5)}
-                color="#FFD700"
-              />
-              <Text style={styles.coinText}>
+        <View style={styles.headerRow}>
+          {/* LEFT */}
+          <View style={styles.headerLeft}>
+            <View style={styles.coinTray}>
+              <Icon name="currency-eth" size={iconSize(5)} color="#8B5CF6" />
+              <Text style={styles.coinTrayText}>
                 {userdata?.user?.coin_balance ?? 0}
               </Text>
             </View>
+          </View>
 
-            {/* PROFILE PIC */}
+          {/* RIGHT */}
+          <View style={styles.headerRight}>
+            <TouchableOpacity style={styles.headerIconBtn}>
+              <Icon name="bell-outline" size={iconSize(6)} color="#000" />
+            </TouchableOpacity>
+
             <TouchableOpacity
               onPress={() => navigation.navigate("UplodePhotoScreen")}
             >
@@ -104,301 +106,345 @@ const socket= socketRef?.current;
           </View>
         </View>
 
-        {/* ================= OFFER ================= */}
-        <View style={styles.offerCard}>
-          <Text style={styles.offerTag}>Special offer for 1 day</Text>
-          <Text style={styles.offerTitle}>
-            Buy 100 coins, get 20 extra absolutely free!
-          </Text>
-          <TouchableOpacity style={styles.claimBtn}>
-            <Text style={styles.claimText}>Claim Now</Text>
-          </TouchableOpacity>
+        {/* ================= SEARCH BAR (SB2) ================= */}
+        <View style={styles.searchContainer}>
+          <Icon name="magnify" size={iconSize(6)} color="#999" />
+          <TextInput
+            placeholder="Search"
+            placeholderTextColor="#8E8E93"
+            style={styles.searchInput}
+          />
         </View>
 
-        {/* ================= ACTIVE PALS ================= */}
-        <Text style={styles.sectionTitle}>Active Pals</Text>
+        {/* ================= STORIES SECTION ================= */}
+        <Text style={styles.sectionLabel}>Stories</Text>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {activePals.map((user) => (
-            <View key={user.id} style={styles.palCard}>
-              <Image source={user.img} style={styles.avatar} />
-              <Text style={styles.palName}>{user.name}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: wp(2) }}
+        >
+          {/* YOUR STORY */}
+          <TouchableOpacity style={styles.storyContainer}>
+            <View style={styles.yourStoryCircle}>
+              <Icon name="plus" size={iconSize(6)} color="#8B5CF6" />
+            </View>
+            <Text style={styles.storyName}>Your Story</Text>
+          </TouchableOpacity>
 
-              <View style={styles.palActionsRow}>
-                <TouchableOpacity style={styles.actionBtn}>
-                  <Icon name="phone" size={iconSize(4)} color="#fff" />
-                </TouchableOpacity>
+          {/* ACTIVE PALS AS STORIES */}
+          {activePals.map((p) => (
+            <TouchableOpacity key={p.id} style={styles.storyContainer}>
+              <Image source={p.img} style={styles.storyAvatar} />
+              <Text style={styles.storyName}>{p.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-                <TouchableOpacity style={styles.actionBtn}>
-                  <Icon name="video" size={iconSize(4)} color="#fff" />
-                </TouchableOpacity>
+        {/* ================= OFFERS CAROUSEL ================= */}
+        <Text style={styles.sectionLabel}>Offers</Text>
 
-                <TouchableOpacity style={styles.actionBtn}>
-                  <Icon
-                    name="message-text"
-                    size={iconSize(4)}
-                    color="#fff"
-                  />
-                </TouchableOpacity>
-              </View>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          style={{ marginTop: hp(1) }}
+        >
+          {offers.map((o) => (
+            <View key={o.id} style={styles.offerCard}>
+              <Text style={styles.offerText}>{o.text}</Text>
             </View>
           ))}
         </ScrollView>
 
-        {/* ================= START CONNECTING ================= */}
-        <Text style={styles.sectionTitle}>Start connecting</Text>
+        {/* DOTS */}
+        <View style={styles.dotsRow}>
+          {offers.map((o, idx) => (
+            <View key={o.id} style={[styles.dot, idx === 0 && styles.dotActive]} />
+          ))}
+        </View>
 
-        <View style={styles.connectRow}>
+        {/* ================= LIKE-MINDED SECTION ================= */}
+        <Text style={styles.sectionLabel}>Like Minded People</Text>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: wp(2) }}
+        >
+          {activePals.map((p) => (
+            <View key={p.id} style={styles.likeCard}>
+              <Image source={p.img} style={styles.likeAvatar} />
+              <Text style={styles.likeName}>{p.name}</Text>
+            </View>
+          ))}
+        </ScrollView>
+
+        {/* ================= ACTIVE DOST SECTION ================= */}
+        <Text style={styles.sectionLabel}>Active Dost</Text>
+        <Text style={styles.placeholderText}>No active dost right now...</Text>
+
+        {/* ================= BOTTOM ACTION BUTTONS ================= */}
+        <View style={styles.bottomActionRow}>
           <TouchableOpacity
-            style={styles.connectBox}
+            style={styles.actionBox}
             onPress={() => navigation.navigate("TrainersCallpage")}
           >
-            <Icon name="dice-5" size={iconSize(6)} color="#fff" />
-            <Text style={styles.connectText}>Random Calls</Text>
+            <Icon name="phone" size={iconSize(6)} color="#fff" />
+            <Text style={styles.actionText}>Random Audio Calls</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.connectBox}>
-            <Icon name="map-marker" size={iconSize(6)} color="#fff" />
-            <Text style={styles.connectText}>Local Calls</Text>
+          <TouchableOpacity
+            style={styles.actionBox}
+            onPress={() => navigation.navigate("TrainersCallpage")}
+          >
+            <Icon name="video" size={iconSize(6)} color="#fff" />
+            <Text style={styles.actionText}>Random Video Calls</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.connectBoxActive}>
-            <Icon name="account-multiple" size={iconSize(6)} color="#fff" />
-            <Text style={styles.connectText}>Followed Calls</Text>
+          <TouchableOpacity
+            style={styles.actionBox}
+            onPress={() => navigation.navigate("TrainersCallpage")}
+          >
+            <Icon name="account-group" size={iconSize(6)} color="#fff" />
+            <Text style={styles.actionText}>Random Feed Calls</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={{ height: hp(15) }} />
+        <View style={{ height: hp(12) }} />
       </ScrollView>
 
-      {/* ================= BOTTOM NAV ================= */}
+      {/* ================= BOTTOM NAVIGATION ================= */}
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navItem}>
-          <Icon name="home-outline" size={iconSize(7)} color="#fff" />
+          <Icon name="home-outline" size={iconSize(7)} color="#8B5CF6" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem}>
-          <Icon name="message-outline" size={iconSize(7)} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.centerBtn}
-          onPress={() => navigation.navigate("TrainersCallpage")}
-        >
-          <Icon name="phone" size={iconSize(8)} color="#fff" />
+          <Icon name="magnify" size={iconSize(7)} color="#8E8E93" />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem}>
-          <Icon
-            name="clock-time-eight-outline"
-            size={iconSize(7)}
-            color="#fff"
-          />
+          <Icon name="bell-outline" size={iconSize(7)} color="#8E8E93" />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.navItem}
           onPress={() => navigation.navigate("ProfileScreen")}
-        >
-          <Icon
-            name="account-circle-outline"
-            size={iconSize(7.5)}
-            color="#fff"
-          />
+          >
+          <Icon name="account-circle-outline" size={iconSize(8)} color="#8E8E93" />
         </TouchableOpacity>
       </View>
     </View>
+          </WelcomeScreenbackgroungpage>
   );
 };
 
 export default HomeScreen;
 
-/* ================= STYLES ================= */
+/* =======================================================
+  ======================= STYLES =========================
+======================================================= */
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: wp(5), paddingTop: hp(5) },
+  root: {
+    flex: 1,
+    // backgroundColor: "#FFFFFF",
+  },
+  container: {
+    paddingHorizontal: wp(5),
+    paddingTop: hp(2),
+  },
 
-  header: {
+  /* ================= HEADER ================= */
+  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
+  },
+  headerLeft: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  coinTray: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fb780cec",
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(1),
+    borderRadius: wp(8),
+    borderWidth: 1,
+    borderColor: "#E0D6FF",
+  },
+  coinTrayText: {
+    marginLeft: wp(1),
+    color: "#6D28D9",
+    fontWeight: "700",
+    fontSize: wp(4),
   },
 
-  appTitle: {
-    color: "#fff",
-    fontSize: wp(6),
-    fontWeight: "900",
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerIconBtn: {
+    marginRight: wp(3),
+    
+  },
+  profilePic: {
+    width: wp(12),
+    height: wp(12),
+    borderRadius: wp(6),
+    borderWidth: 2,
+    borderColor: "#8B5CF6",
   },
 
-  subText: {
-    color: "#c7b7ff",
+  /* ================= SEARCH ================= */
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderColor: "#b678f5ff",
+    borderWidth: 1,
+    borderRadius: wp(4),
+    paddingHorizontal: wp(3),
+    paddingVertical: hp(1),
+    marginTop: hp(2),
+    backgroundColor:"#faf8fbff"
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: wp(4),
+    marginLeft: wp(2),
+    color: "#f8efefff",
+  },
+
+  /* ================= STORIES ================= */
+  sectionLabel: {
+    fontSize: wp(5),
+    fontWeight: "700",
+    color: "#111",
+    marginTop: hp(3),
+    marginBottom: hp(1),
+  },
+  storyContainer: {
+    alignItems: "center",
+    marginRight: wp(4),
+  },
+  yourStoryCircle: {
+    width: wp(18),
+    height: wp(18),
+    borderRadius: wp(9),
+    backgroundColor: "#EFE7FF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  storyAvatar: {
+    width: wp(18),
+    height: wp(18),
+    borderRadius: wp(9),
+  },
+  storyName: {
+    marginTop: hp(0.5),
     fontSize: wp(3),
-    marginTop: 3,
+    color: "#333",
+    fontWeight: "500",
+  },
+
+  /* ================= OFFERS ================= */
+  offerCard: {
+    width: width - wp(10),
+    height: hp(15),
+    backgroundColor: "#F0EAFF",
+    borderRadius: wp(5),
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: wp(4),
+    borderWidth: 1,
+    borderColor: "#E0D6FF",
+  },
+  offerText: {
+    color: "#4C1D95",
+    fontSize: wp(4.2),
+    fontWeight: "700",
+    textAlign: "center",
+    paddingHorizontal: wp(5),
+  },
+  dotsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: hp(1),
+  },
+  dot: {
+    width: wp(2.5),
+    height: wp(2.5),
+    borderRadius: wp(1.25),
+    backgroundColor: "#D4D4D4",
+    marginHorizontal: wp(1),
+  },
+  dotActive: {
+    backgroundColor: "#8B5CF6",
+  },
+
+  /* ================= LIKE MINDED ================= */
+  likeCard: {
+    alignItems: "center",
+    marginRight: wp(4),
+  },
+  likeAvatar: {
+    width: wp(18),
+    height: wp(18),
+    borderRadius: wp(9),
+    borderWidth: 2,
+    borderColor: "#C4B5FD",
+  },
+  likeName: {
+    fontSize: wp(3.2),
+    color: "#222",
+    marginTop: hp(0.5),
     fontWeight: "600",
   },
 
-  rightHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  coinBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#32004E",
-    paddingHorizontal: wp(3),
-    paddingVertical: hp(0.7),
-    borderRadius: wp(6),
-    marginRight: wp(2),
-  },
-
-  coinText: {
-    color: "#FFD700",
-    fontSize: wp(4),
-    marginLeft: 5,
-    fontWeight: "bold",
-  },
-
-  profilePic: {
-    width: wp(13),
-    height: wp(13),
-    borderRadius: wp(7),
-    borderWidth: 2,
-    borderColor: "#ff00ff",
-  },
-
-  offerCard: {
-    marginTop: hp(2),
-    backgroundColor: "#1a0033",
-    borderRadius: wp(5),
-    padding: wp(5),
-    borderWidth: 1,
-    borderColor: "#5b009e",
-  },
-
-  offerTag: {
-    color: "#ff47ff",
-    fontWeight: "800",
-    fontSize: wp(4),
-    marginBottom: 8,
-  },
-
-  offerTitle: {
-    color: "#fff",
-    fontSize: wp(4.2),
-    fontWeight: "700",
-    marginBottom: 12,
-  },
-
-  claimBtn: {
-    backgroundColor: "#ff00ff",
-    paddingVertical: hp(1.5),
-    borderRadius: wp(3),
-    alignItems: "center",
-  },
-
-  claimText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: wp(4),
-  },
-
-  sectionTitle: {
-    color: "#fff",
-    fontSize: wp(5),
-    fontWeight: "800",
-    marginTop: hp(3),
-    marginBottom: hp(1.5),
-  },
-
-  palCard: {
-    backgroundColor: "#1a0033",
-    borderRadius: wp(4),
-    padding: wp(3),
-    marginRight: wp(4),
-    borderWidth: 1,
-    borderColor: "#5b009e",
-    alignItems: "center",
-  },
-
-  avatar: {
-    width: wp(27),
-    height: wp(30),
-    borderRadius: wp(3),
-    resizeMode: "cover",
-  },
-
-  palName: {
-    color: "#fff",
-    fontWeight: "700",
+  /* ================= ACTIVE DOST ================= */
+  placeholderText: {
+    fontSize: wp(3.5),
+    color: "#777",
+    paddingLeft: wp(2),
     marginTop: hp(1),
-    fontSize: wp(3.8),
   },
 
-  palActionsRow: {
-    flexDirection: "row",
-    marginTop: hp(1.3),
-  },
-
-  actionBtn: {
-    backgroundColor: "#32004E",
-    padding: wp(2),
-    borderRadius: wp(3),
-    marginHorizontal: wp(0.7),
-  },
-
-  connectRow: {
+  /* ================= BOTTOM ACTION BUTTONS ================= */
+  bottomActionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginTop: hp(4),
   },
-
-  connectBox: {
+  actionBox: {
     width: "30%",
-    backgroundColor: "#1a0033",
-    borderRadius: wp(5),
-    paddingVertical: hp(3),
+    backgroundColor: "#8B5CF6",
+    borderRadius: wp(4),
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#5b009e",
+    paddingVertical: hp(2),
+    paddingHorizontal: wp(2),
   },
-
-  connectBoxActive: {
-    width: "30%",
-    backgroundColor: "#5b009e",
-    borderRadius: wp(5),
-    paddingVertical: hp(3),
-    alignItems: "center",
-  },
-
-  connectText: {
+  actionText: {
     color: "#fff",
-    marginTop: hp(1),
-    fontSize: wp(3.5),
-    fontWeight: "700",
+    fontWeight: "600",
+    fontSize: wp(3),
+    marginTop: hp(0.7),
+    textAlign: "center",
   },
 
+  /* ================= BOTTOM NAV ================= */
   bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    height: hp(10),
-    backgroundColor: "#120020",
-    borderTopLeftRadius: wp(7),
-    borderTopRightRadius: wp(7),
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    paddingBottom: hp(1.5),
+    borderTopWidth: 1,
+    borderColor: "#E5E7EB",
+    height: hp(9),
+    backgroundColor: "#FFFFFF",
   },
-
-  navItem: { padding: wp(2) },
-
-  centerBtn: {
-    width: wp(18),
-    height: wp(18),
-    backgroundColor: "#ff00ff",
-    borderRadius: wp(10),
-    justifyContent: "center",
+  navItem: {
+    padding: wp(2),
     alignItems: "center",
-    marginBottom: hp(3),
-    elevation: 15,
   },
 });

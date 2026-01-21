@@ -13,6 +13,7 @@ import LinearGradient from "react-native-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { newUserDataRequest } from "../features/user/userAction";
+import WelcomeScreenbackgroundgpage from"../components/BackgroundPages/WelcomeScreenbackgroungpage"
 
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = (width - 40) / 3;
@@ -27,25 +28,26 @@ const BoysavatarScreen = ({ navigation }) => {
     const isSelected = selectedAvatar?.avatar_id === item.avatar_id;
 
     return (
+
       <TouchableOpacity
-        activeOpacity={1}
-        onPress={() => setSelectedAvatar(item)} // ✅ select only
-        style={[
-          styles.avatarWrapper,
+      activeOpacity={1}
+      onPress={() => setSelectedAvatar(item)} // ✅ select only
+      style={[
+        styles.avatarWrapper,
           isSelected && styles.avatarSelected,
         ]}
-      >
+        >
         <Image
           source={{ uri: item.image_url }}
           style={styles.avatarImage}
-        />
+          />
       </TouchableOpacity>
     );
   };
 
   const handleContinue = () => {
     if (!selectedAvatar) return;
-
+    
     // ✅ DISPATCH SELECTED AVATAR ID
     dispatch(
       newUserDataRequest({
@@ -54,14 +56,15 @@ const BoysavatarScreen = ({ navigation }) => {
     );
 
     // ✅ NAVIGATE AFTER DISPATCH
-    navigation.navigate("Home");
+    navigation.navigate("AddYourPhotosScreen");
   };
 
   return (
-    <LinearGradient
+    <WelcomeScreenbackgroundgpage>
+    {/* <LinearGradient
       colors={["#000000", "#1a001f", "#2d0033"]}
       style={styles.container}
-    >
+    > */}
       <StatusBar barStyle="light-content" />
 
       <SafeAreaView style={{ flex: 1 }}>
@@ -97,7 +100,8 @@ const BoysavatarScreen = ({ navigation }) => {
           <Text style={styles.continueText}>Continue</Text>
         </TouchableOpacity>
       </SafeAreaView>
-    </LinearGradient>
+    {/* </LinearGradient> */}
+          </WelcomeScreenbackgroundgpage>
   );
 };
 
@@ -162,7 +166,7 @@ const styles = StyleSheet.create({
     right: 20,
     height: 55,
     borderRadius: 28,
-    backgroundColor: "#d62edc",
+    backgroundColor: "#df09e7ff",
     justifyContent: "center",
     alignItems: "center",
   },

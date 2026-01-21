@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -15,29 +15,47 @@ import { audioCallRequest } from "../features/calls/callAction";
 import { SocketContext } from "../socket/SocketProvider";
 
 const TrainersCallPage = ({ navigation }) => {
-  /* ================= HOOKS (ORDER MATTERS) ================= */
+  /* ================= HOOKS ================= */
   const dispatch = useDispatch();
-  const socketRef = useContext(SocketContext);
-  const socket = socketRef?.current;
-
+  const { socketRef, connected } = useContext(SocketContext);
   const { userdata } = useSelector((state) => state.user);
 
-  /* ================= DERIVED DATA ================= */
-  const myId = userdata?.user?.user_id;
-  const gender = userdata?.user?.gender; // "Male"
+  const hasNavigatedRef = useRef(false);
 
-  /* ================= LOCAL STATE ================= */
   const [callingRandom, setCallingRandom] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState([]);
 
-  /* ================= SOCKET: CALL MATCHED ================= */
+  const gender = userdata?.user?.gender;
+  const myId = userdata?.user?.user_id;
+
+  /* ================= SOCKET DEBUG ================= */
   useEffect(() => {
-    if (!socket) return;
+    if (!connected || !socketRef.current) return;
+
+    console.log("🧪 Male socket connected:", socketRef.current.id);
+  }, [connected]);
+
+  /* ================= call_matched ================= */
+  useEffect(() => {
+    if (!connected) return;
+    if (!socketRef.current) return;
+
+    const socket = socketRef.current;
 
     const onMatched = (data) => {
-      console.log("📥 FE(MALE) call_matched:", data);
-      setCallingRandom(false); // reset state
-      navigation.replace("AudiocallScreen", data);
+      if (!data?.session_id) return;
+      if (hasNavigatedRef.current) return;
+
+      hasNavigatedRef.current = true;
+      setCallingRandom(false);
+
+      console.log("📥 Call matched (MALE):", data);
+
+      navigation.replace("AudiocallScreen", {
+        session_id: data.session_id,
+        peer_id: data.peer_id,
+        role: "caller",
+      });
     };
 
     socket.on("call_matched", onMatched);
@@ -45,64 +63,39 @@ const TrainersCallPage = ({ navigation }) => {
     return () => {
       socket.off("call_matched", onMatched);
     };
-  }, [socket, navigation]);
+  }, [connected, navigation]);
 
-  /* ================= RANDOM AUDIO CALL ================= */
+  /* ================= START RANDOM ================= */
   const startRandomAudioCall = () => {
     if (callingRandom) return;
 
-    if (!gender) {
-      Alert.alert(
-        "Profile incomplete",
-        "Please update your gender to start a call."
-      );
+    if (!connected || !socketRef.current) {
+      Alert.alert("Connecting", "Please wait, connecting to server...");
       return;
     }
 
+    if (!gender) {
+      Alert.alert("Profile incomplete", "Update gender first");
+      return;
+    }
+
+    hasNavigatedRef.current = false;
     setCallingRandom(true);
 
-    console.log("📤 FE → dispatch audioCallRequest", {
-      gender,
-      type: "AUDIO",
-    });
-
     dispatch(
       audioCallRequest({
         call_type: "AUDIO",
-        gender, // "Male"
+        gender,
       })
     );
   };
-
-  /* ================= DIRECT CALL (OPTIONAL) ================= */
-  const startCallWithUser = (targetUserId) => {
-    dispatch(
-      audioCallRequest({
-        call_type: "AUDIO",
-        target_user_id: targetUserId,
-      })
-    );
-  };
-
-  /* ================= UI HELPERS ================= */
-  const renderUser = ({ item }) => (
-    <TouchableOpacity
-      style={styles.callBox}
-      onPress={() => startCallWithUser(item)}
-    >
-      <Text style={styles.callTitle}>User ID: {item}</Text>
-      <Feather name="phone" size={22} color="#fff" />
-    </TouchableOpacity>
-  );
 
   /* ================= UI ================= */
   return (
     <View style={styles.container}>
-      {/* HEADER */}
       <LinearGradient colors={["#4B0082", "#2E004D"]} style={styles.header}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Personal Training</Text>
-
           <View style={styles.wallet}>
             <Icon name="wallet-outline" size={18} color="#FFC300" />
             <Text style={styles.walletText}>Coins</Text>
@@ -110,13 +103,9 @@ const TrainersCallPage = ({ navigation }) => {
         </View>
       </LinearGradient>
 
-      {/* RANDOM AUDIO CALL */}
       <View style={styles.randomWrapper}>
         <TouchableOpacity
-          style={[
-            styles.randomButton,
-            callingRandom && { opacity: 0.6 },
-          ]}
+          style={[styles.randomButton, callingRandom && { opacity: 0.6 }]}
           onPress={startRandomAudioCall}
           disabled={callingRandom}
         >
@@ -127,19 +116,19 @@ const TrainersCallPage = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* ONLINE USERS (OPTIONAL) */}
       <View style={styles.listWrapper}>
         {onlineUsers.length === 0 ? (
-          <Text style={styles.emptyText}>
-            No users online right now
-          </Text>
+          <Text style={styles.emptyText}>No users online right now</Text>
         ) : (
           <FlatList
-            data={onlineUsers.filter(
-              (id) => String(id) !== String(myId)
-            )}
+            data={onlineUsers.filter((id) => String(id) !== String(myId))}
             keyExtractor={(item) => String(item)}
-            renderItem={renderUser}
+            renderItem={({ item }) => (
+              <TouchableOpacity style={styles.callBox}>
+                <Text style={styles.callTitle}>User ID: {item}</Text>
+                <Feather name="phone" size={22} color="#fff" />
+              </TouchableOpacity>
+            )}
           />
         )}
       </View>
@@ -148,6 +137,7 @@ const TrainersCallPage = ({ navigation }) => {
 };
 
 export default TrainersCallPage;
+
 
 /* ================= STYLES ================= */
 const styles = StyleSheet.create({

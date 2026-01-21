@@ -1,65 +1,49 @@
 import {
   RTCPeerConnection,
+  MediaStream,
 } from "react-native-webrtc";
 
 const ICE_SERVERS = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: "turn:openrelay.metered.ca:443",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
+    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
   ],
+  iceCandidatePoolSize: 10,
 };
 
-export const createPC = ({ onIceCandidate, onIceState }) => {
-  const pc = new RTCPeerConnection(ICE_SERVERS);
+export const createPC = ({ onIceCandidate, onTrack, onIceState }) => {
+  try {
+    const pc = new RTCPeerConnection(ICE_SERVERS);
 
-  console.log("🌐 PeerConnection CREATED");
+    pc.onicecandidate = (event) => {
+      if (event?.candidate) {
+        onIceCandidate?.(event.candidate);
+      }
+    };
 
-  /* ================= ICE CANDIDATES ================= */
-  pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      console.log("🧊 ICE CANDIDATE GENERATED:", event.candidate);
-      onIceCandidate?.(event.candidate);
-    } else {
-      console.log("🧊 ICE gathering complete");
-    }
-  };
+    pc.ontrack = (event) => {
+      if (event.streams?.[0]) {
+        onTrack?.(event.streams[0]);
+      } else if (event.track) {
+        const stream = new MediaStream();
+        stream.addTrack(event.track);
+        onTrack?.(stream);
+      }
+    };
 
-  pc.onicecandidateerror = (e) => {
-    console.log("❌ ICE CANDIDATE ERROR:", e);
-  };
+    pc.oniceconnectionstatechange = () => {
+      console.log("🌐 ICE State:", pc.iceConnectionState);
+      onIceState?.(pc.iceConnectionState);
+    };
 
-  /* ================= ICE STATE ================= */
-  pc.oniceconnectionstatechange = () => {
-    console.log("🧊 ICE CONNECTION STATE:", pc.iceConnectionState);
-    onIceState?.(pc.iceConnectionState);
-  };
+    pc.onsignalingstatechange = () => {
+      console.log("📡 Signaling State:", pc.signalingState);
+    };
 
-  pc.onicegatheringstatechange = () => {
-    console.log("❄️ ICE GATHERING STATE:", pc.iceGatheringState);
-  };
-
-  /* ================= CONNECTION ================= */
-  pc.onconnectionstatechange = () => {
-    console.log("🔌 PEER CONNECTION STATE:", pc.connectionState);
-  };
-
-  pc.onsignalingstatechange = () => {
-    console.log("📡 SIGNALING STATE:", pc.signalingState);
-  };
-
-  /* ================= MEDIA ================= */
-  pc.ontrack = (event) => {
-    console.log("🔊 REMOTE TRACK RECEIVED");
-    console.log("🎧 Streams:", event.streams);
-  };
-
-  pc.onnegotiationneeded = () => {
-    console.log("🔄 NEGOTIATION NEEDED");
-  };
-
-  return pc;
+    return pc;
+  } catch (e) {
+    console.error("❌ RTCPeerConnection failed:", e);
+    return null;
+  }
 };

@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { newUserDataRequest } from "../features/user/userAction";
-
+import WelcomeScreenbackgroundgpage from"../components/BackgroundPages/WelcomeScreenbackgroungpage.js"
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = (width - 40) / 3;
 
@@ -60,10 +60,12 @@ const ChooseAvatarScreen = () => {
   };
 
   return (
-    <LinearGradient
+    <WelcomeScreenbackgroundgpage>
+
+    {/* <LinearGradient
       colors={["#000000", "#1a001f", "#2d0033"]}
       style={styles.container}
-    >
+      > */}
       <StatusBar barStyle="light-content" />
 
       <SafeAreaView style={{ flex: 1 }}>
@@ -72,7 +74,7 @@ const ChooseAvatarScreen = () => {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
-          >
+            >
             <Text style={styles.backIcon}>‹</Text>
           </TouchableOpacity>
 
@@ -88,7 +90,7 @@ const ChooseAvatarScreen = () => {
           extraData={selectedAvatar}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.grid}
-        />
+          />
 
         {/* CONTINUE BUTTON */}
         <TouchableOpacity
@@ -98,11 +100,12 @@ const ChooseAvatarScreen = () => {
           ]}
           disabled={!selectedAvatar}
           onPress={handleContinue}
-        >
+          >
           <Text style={styles.continueText}>Continue</Text>
         </TouchableOpacity>
       </SafeAreaView>
-    </LinearGradient>
+    {/* </LinearGradient> */}
+          </WelcomeScreenbackgroundgpage>
   );
 };
 

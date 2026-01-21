@@ -6,6 +6,7 @@ import randomuserReduce from "../features/RandomUsers/randomuserReducer";
 import callReducer from "../features/calls/callReducer"
 import languageReducer from "../features/language/languageReducer";
 import avatarsReducer from"../features/Avatars/avatarsReducer"
+import loccationReducer from"../features/Countries/locationReducer"
 const rootReducer = combineReducers({
   auth:authReducer,
   user: userReducer,
@@ -13,8 +14,8 @@ const rootReducer = combineReducers({
   randomusers:randomuserReduce,
   calls:callReducer,
   language:languageReducer,
-  avatars:avatarsReducer
-  
+  avatars:avatarsReducer,
+  location:loccationReducer
 });
 
 export default rootReducer;

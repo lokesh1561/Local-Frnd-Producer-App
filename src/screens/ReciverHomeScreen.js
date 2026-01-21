@@ -16,15 +16,12 @@ import { CommonActions } from "@react-navigation/native";
 import { audioCallRequest } from "../features/calls/callAction";
 import { SocketContext } from "../socket/SocketProvider";
 
-/* ================= CONSTANTS ================= */
 const WAIT_TIMEOUT = 60000;
 
-/* ================= COMPONENT ================= */
 const ReciverHomeScreen = ({ navigation }) => {
-  /* ---------- HOOKS (DO NOT CHANGE ORDER) ---------- */
+  /* ================= HOOKS (ALWAYS FIRST) ================= */
   const dispatch = useDispatch();
-  const socketRef = useContext(SocketContext);
-  const socket = socketRef?.current;
+  const { socketRef, connected } = useContext(SocketContext);
 
   const timeoutRef = useRef(null);
   const navigatingRef = useRef(false);
@@ -33,21 +30,12 @@ const ReciverHomeScreen = ({ navigation }) => {
   const [showModal, setShowModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  /* ================= PRESENCE ================= */
-  useEffect(() => {
-    if (!socket) return;
-
-    const onPresence = (data) => {
-      console.log("👤 Presence:", data.user_id, data.status);
-    };
-
-    socket.on("presence_update", onPresence);
-    return () => socket.off("presence_update", onPresence);
-  }, [socket]);
-
   /* ================= CALL MATCHED ================= */
   useEffect(() => {
-    if (!socket) return;
+    if (!connected) return;
+    if (!socketRef.current) return;
+
+    const socket = socketRef.current;
 
     const onMatched = (data) => {
       if (navigatingRef.current) return;
@@ -56,8 +44,13 @@ const ReciverHomeScreen = ({ navigation }) => {
       clearTimeout(timeoutRef.current);
       setWaiting(false);
 
-      console.log("📥 Call matched:", data);
-      navigation.replace("AudiocallScreen", data);
+      console.log("📥 Call matched (FEMALE):", data);
+
+      navigation.replace("AudiocallScreen", {
+        session_id: data.session_id,
+        role: data.role,
+        peer_id: data.peer_id,
+      });
     };
 
     socket.on("call_matched", onMatched);
@@ -66,15 +59,17 @@ const ReciverHomeScreen = ({ navigation }) => {
       socket.off("call_matched", onMatched);
       clearTimeout(timeoutRef.current);
     };
-  }, [socket, navigation]);
+  }, [connected, navigation]);
 
   /* ================= GO ONLINE ================= */
   const handleGoOnline = () => {
-    if (!socket || !socket.connected || waiting) return;
+    if (!connected) return;
+    if (!socketRef.current) return;
+    if (waiting) return;
 
     navigatingRef.current = false;
-    setShowModal(false);
     setWaiting(true);
+    setShowModal(false);
 
     dispatch(
       audioCallRequest({
@@ -94,10 +89,6 @@ const ReciverHomeScreen = ({ navigation }) => {
     try {
       clearTimeout(timeoutRef.current);
 
-      if (socket) {
-        socket.removeAllListeners();
-        socket.disconnect();
-      }
 
       await AsyncStorage.clear();
 
@@ -115,7 +106,6 @@ const ReciverHomeScreen = ({ navigation }) => {
   /* ================= UI ================= */
   return (
     <SafeAreaView style={styles.safe}>
-      {/* HEADER */}
       <LinearGradient colors={["#6a007a", "#3b003f"]} style={styles.header}>
         <Text style={styles.appName}>Local Friend</Text>
 
@@ -127,7 +117,6 @@ const ReciverHomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </LinearGradient>
 
-      {/* BODY */}
       <View style={styles.middle}>
         {!waiting ? (
           <TouchableOpacity onPress={() => setShowModal(true)}>
@@ -168,7 +157,10 @@ const ReciverHomeScreen = ({ navigation }) => {
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Logout?</Text>
 
-            <TouchableOpacity style={styles.logoutConfirm} onPress={handleLogout}>
+            <TouchableOpacity
+              style={styles.logoutConfirm}
+              onPress={handleLogout}
+            >
               <Icon name="log-out-outline" size={22} color="#fff" />
               <Text style={styles.callText}>Yes, Logout</Text>
             </TouchableOpacity>
@@ -184,6 +176,8 @@ const ReciverHomeScreen = ({ navigation }) => {
 };
 
 export default ReciverHomeScreen;
+
+
 
 /* ================= STYLES ================= */
 const styles = StyleSheet.create({

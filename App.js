@@ -1,5 +1,5 @@
 // src/App.js
-import * as React from 'react';
+import React, { useEffect } from "react";
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Provider } from 'react-redux';
@@ -29,10 +29,22 @@ import ChoosePlanScreen from './src/screens/ChoosePlanScreen';
 import OnboardScreen from './src/screens/OnboardScreen'
 import LanguageScreen from './src/screens/LanguageScreen'
 import ReciverHomeScreen from './src/screens/ReciverHomeScreen'
-import SocketProvider from './src/socket/SocketProvider';   
+import WelcomeScreen02 from './src/screens/WelcomeScreen02'
+import SocketProvider from './src/socket/SocketProvider';  
+import WelcomeScreen03 from './src/screens/WelcomeScreen03' 
+import SelectYourCountryScreen from "./src/screens/SelectYourCountryScreen"
+import InterestScreen from"./src/screens/InterestScreen"
+import SelectYourIdealMatchScreen from"./src/screens/SelectYourIdealMatchScreen"
+import FillYourProfileScreen from"./src/screens/FillYourProfileScreen"
+import LifeStyleScreen from"./src/screens/LifeStyleScreen"
+import AddYourPhotosScreen from"./src/screens/AddYourPhotosScreen"
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+
+  //  useEffect(() => {
+  //   setupCallKeep();   // ✅ MUST RUN ON APP START
+  // }, []);
   return (
     <Provider store={store}>
       <SocketProvider>
@@ -62,7 +74,14 @@ export default function App() {
   <Stack.Screen name='ChoosePlanScreen' component={ChoosePlanScreen}/>
 <Stack.Screen name='LanguageScreen' component={LanguageScreen}/>
 <Stack.Screen name='ReciverHomeScreen' component={ReciverHomeScreen}/>
-
+<Stack.Screen name="WelcomeScreen02" component={WelcomeScreen02}/>
+<Stack.Screen name="WelcomeScreen03" component={WelcomeScreen03}/>
+   <Stack.Screen name="SelectYourCountryScreen" component={SelectYourCountryScreen}/>
+   <Stack.Screen name="InterestScreen" component={InterestScreen}/>
+   <Stack.Screen name="SelectYourIdealMatchScreen" component={SelectYourIdealMatchScreen}/>
+   <Stack.Screen name="FillYourProfileScreen" component={FillYourProfileScreen}/>
+   <Stack.Screen name="LifeStyleScreen" component={LifeStyleScreen}/>
+   <Stack.Screen name="AddYourPhotosScreen"component={AddYourPhotosScreen}/>
    </Stack.Navigator>
       </NavigationContainer>
       </SocketProvider>
