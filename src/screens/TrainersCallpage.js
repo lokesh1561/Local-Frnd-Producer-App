@@ -15,7 +15,6 @@ import { startCallRequest } from "../features/calls/callAction";
 import { SocketContext } from "../socket/SocketProvider";
 
 const TrainersCallPage = ({ navigation }) => {
-  /* ================= HOOKS (ORDER MUST NEVER CHANGE) ================= */
   const dispatch = useDispatch();
   const { socketRef, connected } = useContext(SocketContext);
   const { userdata } = useSelector((state) => state.user);
