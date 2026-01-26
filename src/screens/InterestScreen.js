@@ -11,31 +11,35 @@ import Icon from "react-native-vector-icons/Ionicons";
 import LinearGradient from "react-native-linear-gradient";
 import WelcomeScreenbackgroundgpage from "../components/BackgroundPages/WelcomeScreenbackgroungpage.js";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchInterestsRequest } from "../features/interest/interestActions";
+import {
+  fetchInterestsRequest,
+  selectInterestsRequest,
+} from "../features/interest/interestActions";
 
 const InterestScreen = ({ navigation }) => {
   const dispatch = useDispatch();
 
   const { interests, loading } = useSelector((state) => state.interest);
 
+  // stores ONLY interest IDs
   const [selected, setSelected] = useState([]);
 
+  // toggle by ID
   const toggleSelect = (item) => {
     setSelected((prev) =>
-      prev.includes(item)
-        ? prev.filter((v) => v !== item)
-        : [...prev, item]
+      prev.includes(item.id)
+        ? prev.filter((v) => v !== item.id)
+        : [...prev, item.id]
     );
   };
 
   useEffect(() => {
     dispatch(fetchInterestsRequest());
-  }, []);
+  }, [dispatch]);
 
   return (
     <WelcomeScreenbackgroundgpage>
       <SafeAreaView style={styles.container}>
-        
         {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -58,14 +62,19 @@ const InterestScreen = ({ navigation }) => {
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.tagsWrapper}>
             {interests?.map((item) => {
-              const active = selected.includes(item.name);
+              const active = selected.includes(item.id); // ✅ FIX
               return (
                 <TouchableOpacity
                   key={item.id}
-                  onPress={() => toggleSelect(item.name)}
+                  onPress={() => toggleSelect(item)} // ✅ FIX
                   style={[styles.tag, active && styles.tagActive]}
                 >
-                  <Text style={[styles.tagText, active && styles.tagTextActive]}>
+                  <Text
+                    style={[
+                      styles.tagText,
+                      active && styles.tagTextActive,
+                    ]}
+                  >
                     {item.name}
                   </Text>
                 </TouchableOpacity>
@@ -83,7 +92,15 @@ const InterestScreen = ({ navigation }) => {
           >
             <TouchableOpacity
               disabled={selected.length === 0}
-              onPress={() => navigation.navigate("GenderScreen")}
+              onPress={() => {
+                dispatch(
+                  selectInterestsRequest({
+                    interests: selected, 
+                  })
+                );
+
+                navigation.navigate("GenderScreen");
+              }}
             >
               <Text style={styles.continueText}>CONTINUE</Text>
             </TouchableOpacity>
