@@ -1,14 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Alert,
-  Animated,
-  Dimensions,
-} from "react-native";
+  View,  Text,  StyleSheet,  TouchableOpacity,  Image,  Alert,  Animated,  Dimensions,} from "react-native";
 import LinearGradient from "react-native-linear-gradient";
 import Icon from "react-native-vector-icons/Ionicons";
 import Feather from "react-native-vector-icons/Feather";
