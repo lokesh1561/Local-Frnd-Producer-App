@@ -23,17 +23,13 @@ const ProfileScreen = () => {
   /* ================= LOGOUT ================= */
   const handlelogoubutton = async () => {
     try {
-      // 🔴 FORCE USER OFFLINE (IMPORTANT)
       socketRef?.current?.emit("user_offline");
       socketRef?.current?.disconnect();
 
-      // 🔐 CLEAR STORAGE
       await AsyncStorage.multiRemove(["twittoke", "user_id"]);
 
-      // 🔄 REDUX LOGOUT
       dispatch(userlogoutrequest());
 
-      // 🔁 RESET NAVIGATION
       navigation.reset({
         index: 0,
         routes: [{ name: "Phone" }],
@@ -123,29 +119,35 @@ const ProfileScreen = () => {
 
         {/* OPTIONS */}
         <View style={styles.listBox}>
-          <View style={styles.listItem}>
+
+          <TouchableOpacity style={styles.listItem}>
             <Icon name="settings-outline" size={24} color="#666" />
             <Text style={styles.listText}>Settings</Text>
             <Icon name="chevron-forward" size={20} color="#666" />
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.listItem}>
+          <TouchableOpacity style={styles.listItem}>
             <Icon name="help-circle-outline" size={24} color="#666" />
             <Text style={styles.listText}>Support</Text>
             <Icon name="chevron-forward" size={20} color="#666" />
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.listItem}>
+          <TouchableOpacity style={styles.listItem}>
             <Icon name="document-text-outline" size={24} color="#666" />
             <Text style={styles.listText}>Privacy Policy</Text>
             <Icon name="chevron-forward" size={20} color="#666" />
-          </View>
+          </TouchableOpacity>
 
-          <View style={styles.listItem}>
+          {/* ✅ FIXED ABOUT ROW */}
+          <TouchableOpacity
+            style={styles.listItem}
+            onPress={() => navigation.navigate("AboutScreen")}
+          >
             <Icon name="information-circle-outline" size={24} color="#666" />
             <Text style={styles.listText}>About</Text>
             <Icon name="chevron-forward" size={20} color="#666" />
-          </View>
+          </TouchableOpacity>
+
         </View>
 
         {/* LOGOUT */}
@@ -165,6 +167,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     paddingTop: 40,
+    flex: 1,
   },
 
   headerRow: {
