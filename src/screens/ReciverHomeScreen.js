@@ -27,8 +27,7 @@ const ReciverHomeScreen = ({ navigation }) => {
 
   const navigatingRef = useRef(false);
 
-  const [waiting, setWaiting] = useState(false);
-  const [callType, setCallType] = useState(null);
+  
   const [showModal, setShowModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -40,48 +39,21 @@ console.log("userdata", userdata);
       dispatch(userDatarequest());
     }, []);
   /* ================= SOCKET: INCOMING CALL ================= */
-  useEffect(() => {
-    if (!connected || !socketRef.current) return;
-
-    const socket = socketRef.current;
-
-    const onIncomingCall = (data) => {
-      if (navigatingRef.current) return;
-
-      navigatingRef.current = true;
-      setWaiting(false);
-
-      const screen =
-        data.call_type === "VIDEO"
-          ? "VideocallScreen"
-          : "AudiocallScreen";
-
-      navigation.replace(screen, {
-        session_id: data.session_id,
-        role: "receiver",
-      });
-    };
-
-    socket.on("incoming_call", onIncomingCall);
-
-    return () => {
-      socket.off("incoming_call", onIncomingCall);
-    };
-  }, [connected, navigation, socketRef]);
-
+ 
   /* ================= START SEARCH ================= */
-  const handleGoOnline = (type) => {
-    if (!connected || waiting) return;
+ const handleGoOnline = (type) => {
 
-    navigatingRef.current = false;
-    setWaiting(true);
-    setCallType(type);
-    setShowModal(false);
+  if (!connected) return;
 
-    dispatch(femaleSearchRequest({ call_type: type }));
+  setShowModal(false);
 
+  dispatch(femaleSearchRequest({ call_type: type }));
 
-  };
+  navigation.navigate("CallStatusScreen", {
+    call_type: type,
+    role: "female",
+  });
+};
 
   /* ================= CANCEL SEARCH ================= */
   const handleCancel = () => {
@@ -154,28 +126,46 @@ dispatch(femaleCancelRequest());
 
       {/* BODY */}
       <View style={styles.middle}>
-        {!waiting ? (
-          <TouchableOpacity onPress={() => setShowModal(true)}>
-            <LinearGradient
-              colors={["#ff2fd2", "#b000ff"]}
-              style={styles.onlineBtn}
-            >
-              <Icon name="radio" size={34} color="#fff" />
-              <Text style={styles.onlineText}>GO ONLINE</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        ) : (
-          <>
-            <Text style={styles.waitingText}>
-              Waiting for {callType} call… 📞
-            </Text>
+  {/* <TouchableOpacity onPress={() => setShowModal(true)}>
+    <LinearGradient
+      colors={["#ff2fd2", "#b000ff"]}
+      style={styles.onlineBtn}
+    >
+      <Icon name="radio" size={34} color="#fff" />
+      <Text style={styles.onlineText}>GO ONLINE</Text>
+    </LinearGradient>
+  </TouchableOpacity> */}
 
-            <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+
+<TouchableOpacity activeOpacity={0.9} onPress={() => setShowModal(true)}>
+  <LinearGradient
+    colors={["#b14cff", "#ff4fd8"]}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    style={styles.outerPill}
+  >
+  {/* background hearts (5 total) */}
+<Icon name="heart" size={50} color="rgba(255,255,255,0.35)" style={styles.heart1} />
+<Icon name="heart" size={50} color="rgba(255,255,255,0.30)" style={styles.heart2} />
+<Icon name="heart" size={50} color="rgba(255,255,255,0.28)" style={styles.heart3} />
+<Icon name="heart" size={50} color="rgba(255,255,255,0.25)" style={styles.heart4} />
+<Icon name="heart" size={50} color="rgba(255,255,255,0.22)" style={styles.heart5} />
+
+    {/* INNER PILL */}
+    <View style={styles.innerPill}>
+      <View style={styles.innerPill}>
+  <Icon name="wifi-outline" size={24} color="#fff" />
+  <Text style={styles.innerText}>GO ONLINE</Text>
+</View>
+
+    </View>
+  </LinearGradient>
+</TouchableOpacity>
+
+
+
+</View>
+
 
       {/* CALL TYPE MODAL */}
       <Modal transparent visible={showModal} animationType="fade">
@@ -235,7 +225,7 @@ export default ReciverHomeScreen;
 
 /* ================= STYLES ================= */
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#0A001A' },
+  safe: { flex: 1, backgroundColor: '#e9e0f8' },
 
   header: {
     paddingVertical: 20,
@@ -264,6 +254,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 20,
   },
+
 badge: {
   position: "absolute",
   top: -6,
@@ -361,6 +352,62 @@ badgeText: {
     fontSize: 16,
     marginLeft: 10,
   },
+  
+outerPill: {
+  width: 400,
+  height: 120,
+  borderRadius: 18,
+  justifyContent: "center",
+  alignItems: "center",
+  overflow: "hidden",
+  elevation: 6,
+},
+
+innerPill: {
+  alignItems: "center",     
+  justifyContent: "center",
+  paddingHorizontal: 26,
+  paddingVertical: 8,
+  borderRadius: 30,
+  backgroundColor: "rgba(255,255,255,0.18)",
+},
+innerText: {
+  marginLeft: 10,
+  color: "#fff",
+  fontSize: 15,
+  fontWeight: "700",
+  letterSpacing: 1,
+},
+heart1: {
+  position: "absolute",
+  left: 18,
+  top: 10,
+},
+
+heart2: {
+  position: "absolute",
+  left: 150,
+  top: 10,
+},
+
+heart3: {
+  position: "absolute",
+  right: 60,
+  top: 10,
+},
+
+heart4: {
+  position: "absolute",
+  right: 30,
+  bottom: 6,
+},
+
+heart5: {
+  position: "absolute",
+  left: 100,
+  bottom: 6,
+},
+
 
   closeText: {
     color: '#aaa',

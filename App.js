@@ -16,7 +16,7 @@ import LocationScreen from "./src/screens/LocationScreen"
 import ProfileScreen from "./src/screens/ProfileScreen"
 import PlanScreen from "./src/screens/PlansScreen"
 import UplodePhotoScreen from './src/screens/UplodePhotoScreen';
-import TrainersCallpage from './src/screens/TrainersCallpage';
+// import TrainersCallpage from './src/screens/TrainersCallpage';
 import VideocallScreen from './src/screens/VideocallScreen';
 import AudiocallScreen from './src/screens/AudiocallScreen';
 import GirlsavatarScreen from './src/screens/GirlsavatarScreen';
@@ -45,6 +45,8 @@ import StoriesScreen from'./src/screens/StoriesScreen'
 import CallStatusScreen from "./src/screens/CallStatusScreen"
 import PerfectMatchScreen from"./src/screens/PerfectMatchScreen"
 import EndCallConfirmModal from "./src/screens/EndCallConfirmationScreen"
+import NotificationScreen from "./src/screens/NotificationScreen"
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -72,7 +74,7 @@ export default function App() {
         <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
         <Stack.Screen name="PlanScreen" component={PlanScreen} />
         <Stack.Screen name="UplodePhotoScreen" component={UplodePhotoScreen} />
- <Stack.Screen name="TrainersCallpage" component={TrainersCallpage} />    
+ {/* <Stack.Screen name="TrainersCallpage" component={TrainersCallpage} />     */}
   <Stack.Screen name="VideocallScreen" component={VideocallScreen} />    
     <Stack.Screen name="AudiocallScreen" component={AudiocallScreen} />    
 <Stack.Screen name='OnboardScreen' component={OnboardScreen}/>
@@ -99,6 +101,7 @@ export default function App() {
 <Stack.Screen name="CallStatusScreen" component={CallStatusScreen}/>
 <Stack.Screen name="EndCallConfirmModal" component={EndCallConfirmModal}/>
 <Stack.Screen name="PerfectMatchScreen" component={PerfectMatchScreen}/>
+<Stack.Screen name="NotificationScreen" component={NotificationScreen}/>
 <Stack.Screen
   name="FriendRequestsScreen"
   component={FriendRequestsScreen}

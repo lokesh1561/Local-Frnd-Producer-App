@@ -87,7 +87,7 @@ const HomeScreen = () => {
             {/* BELL + BADGE */}
             <TouchableOpacity
               style={styles.bellWrap}
-              onPress={() => navigation.navigate("FriendRequestsScreen")}
+              onPress={() => navigation.navigate("NotificationScreen")}
             >
               <Icon name="bell-outline" size={iconSize(6)} color="#000" />
              {incoming.length > 0 && (
