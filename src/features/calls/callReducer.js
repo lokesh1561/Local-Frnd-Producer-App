@@ -76,14 +76,68 @@ case T.INCOMING_CALL_CONNECTED:
       status: "RINGING",
     },
   };
+case T.FRIEND_CALL_REQUEST:
+  return {
+    ...state,
+    loading: true,
+    error: null
+  };
+// case T.FRIEND_CALL_SUCCESS:
+//   return {
+//     ...state,
+//     loading: false,
+//     call: action.payload
+//   };
 
+case T.FRIEND_CALL_SUCCESS:
+  return {
+    ...state,
+    loading: false,
+    call: {
+      ...action.payload,
+      direction: "OUTGOING"
+    }
+  };
 
+case T.FRIEND_CALL_FAILED:
+  return {
+    ...state,
+    loading: false,
+    error: action.payload
+  }; 
     case T.CLEAR_CALL:
       return {
         ...state,
         call: null,
         connectedCallDetails: null
       };
+
+      case T.INCOMING_CALL_RINGING:
+  return {
+    ...state,
+    call: {
+      ...action.payload,
+      status: "RINGING",
+      direction: "INCOMING"
+    }
+  };
+
+case T.INCOMING_CALL_ACCEPT:
+  return {
+    ...state,
+    call: {
+      ...state.call,
+      status: "ACCEPTED"
+    }
+  };
+
+case T.INCOMING_CALL_REJECT:
+  return {
+    ...state,
+    call: null,
+    connectedCallDetails: null
+  };
+
       
     default:
       return state;

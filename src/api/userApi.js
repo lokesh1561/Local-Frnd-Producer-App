@@ -34,6 +34,7 @@ export const female_cancel = `${MAIN_BASE_URL}/api/call/cancel-search`;      // 
 export const searching_females = `${MAIN_BASE_URL}/api/call/searching-females`;
 export const call_connected_details =`${MAIN_BASE_URL}/api/call/connected-details`;
 export const direct_call = `${MAIN_BASE_URL}/api/call/direct-connect`; // MALE
+export const friend_connect =`${MAIN_BASE_URL}/api/call/friend-connect`;
 
 
 export const chatHistoryApi = `${MAIN_BASE_URL}/api/chat/messages`;

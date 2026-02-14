@@ -1,5 +1,3 @@
-// CallStatusScreen.js
-
 import React, { useEffect, useRef,useContext  } from "react";
 import { View, Text, StyleSheet, Image, Animated } from "react-native";
 import LinearGradient from "react-native-linear-gradient";
@@ -7,7 +5,6 @@ import { useSelector, useDispatch } from "react-redux";
 import { callDetailsRequest } from "../features/calls/callAction";
 import { SocketContext } from "../socket/SocketProvider";
 
-/* ---------------- STATIC DATA ---------------- */
 const smallAvatars = [
   require("../assets/girl1.jpg"),
   require("../assets/boy1.jpg"),
@@ -23,7 +20,7 @@ const DOT_RADIUS = (CENTER_SIZE * 1.7) / 2;
 const CallStatusScreen = ({ navigation, route }) => {
 
 
-  const dispatch = useDispatch();
+const dispatch = useDispatch();
 const { socketRef, connected } = useContext(SocketContext);
 
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -50,6 +47,59 @@ useEffect(() => {
 
     return () => anim.stop();
   }, [rotateAnim]);
+// useEffect(() => {
+
+//   if (role !== "female") return;
+//   if (!connected || !socketRef.current) return;
+
+//   const socket = socketRef.current;
+
+//   const onIncomingCall = (data) => {
+
+//     if (navigatedRef.current) return;
+
+//     navigatedRef.current = true;
+
+//     const screen =
+//       data.call_type === "VIDEO"
+//         ? "VideocallScreen"
+//         : "AudiocallScreen";
+
+//     navigation.replace(screen, {
+//       session_id: data.session_id,
+//       role: "receiver",
+//     });
+//   };
+
+//   socket.on("incoming_call", onIncomingCall);
+
+//   return () => {
+//     socket.off("incoming_call", onIncomingCall);
+//   };
+
+// }, [role, connected, socketRef, navigation]);
+// useEffect(() => {
+//   if (!socketRef.current) return;
+
+//   const onIncomingCall = (data) => {
+
+//     navigation.navigate("IncomingCallScreen", {
+//       session_id: data.session_id,
+//       call_type: data.call_type,
+//       fromUser: data.from_user
+//     });
+//   };
+
+//   socketRef.current.on("incoming_call", onIncomingCall);
+
+//   return () => {
+//     socketRef.current.off("incoming_call", onIncomingCall);
+//   };
+
+// }, []);
+
+
+
 useEffect(() => {
 
   if (role !== "female") return;
@@ -59,8 +109,10 @@ useEffect(() => {
 
   const onIncomingCall = (data) => {
 
-    if (navigatedRef.current) return;
+    // ✅ chat calls must NOT auto join
+if (data?.is_friend === true) return;
 
+    if (navigatedRef.current) return;
     navigatedRef.current = true;
 
     const screen =
@@ -80,36 +132,99 @@ useEffect(() => {
     socket.off("incoming_call", onIncomingCall);
   };
 
-}, [role, connected, socketRef, navigation]);
+}, [role, connected]);
 
-  useEffect(() => {
+//   useEffect(() => {
+//   if (!call?.status) return;
 
-    if (!call || !call.status) return;
+//   const status = call.status.toUpperCase();
 
-    const status = call.status.toUpperCase();
-    if (role === "male") {
+//   if (status === "RINGING") {
 
-      if (status === "RINGING") {
+//     // only if you are not already on waiting screen
+//     navigation.replace("PerfectMatchScreen", {
+//       session_id: call.session_id,
+//       call_type: call.call_type,
+//     });
 
-        if (navigatedRef.current) return;
-        navigatedRef.current = true;
+//   }
 
-        dispatch(callDetailsRequest());
+//   if (status === "ACCEPTED") {
 
-        navigation.replace("PerfectMatchScreen", {
-          call_type: call.call_type,
-          session_id: call.session_id,
-        });
+//     const screen =
+//       call.call_type === "VIDEO"
+//         ? "VideocallScreen"
+//         : "AudiocallScreen";
 
-        return;
-      }
+//     navigation.replace(screen, {
+//       session_id: call.session_id,
+//     });
+
+//   }
+
+//   if (status === "FAILED" || status === "CANCELED") {
+//     navigation.goBack();
+//   }
+
+// }, [call?.status]);
+
+useEffect(() => {
+
+  if (!call?.status) return;
+
+  const status = String(call.status).toUpperCase();
+
+  // -------------------------------
+  // RANDOM CALL FLOW
+  // -------------------------------
+  if (!call?.is_friend) {
+
+    if (status === "RINGING") {
+      navigation.replace("PerfectMatchScreen", {
+        session_id: call.session_id,
+        call_type: call.call_type,
+      });
+      return;
     }
 
-    if (status === "FAILED" || status === "CANCELED") {
-      navigation.goBack();
-    }
+    if (status === "ACCEPTED") {
+      const screen =
+        call.call_type === "VIDEO"
+          ? "VideocallScreen"
+          : "AudiocallScreen";
 
-  }, [call, role, navigation, dispatch]);
+      navigation.replace(screen, {
+        session_id: call.session_id,
+      });
+      return;
+    }
+  }
+
+  // -------------------------------
+  // FRIEND CALL FLOW
+  // -------------------------------
+  if (call?.is_friend) {
+
+    // for friend call we DO NOT go to PerfectMatch
+    if (status === "ACCEPTED") {
+
+      const screen =
+        call.call_type === "VIDEO"
+          ? "VideocallScreen"
+          : "AudiocallScreen";
+
+      navigation.replace(screen, {
+        session_id: call.session_id,
+      });
+      return;
+    }
+  }
+
+  if (status === "FAILED" || status === "CANCELED") {
+    navigation.goBack();
+  }
+
+}, [call?.status]);
 
   /* ---------------- UI ANIMATIONS ---------------- */
   const ripple1 = useRef(new Animated.Value(0)).current;

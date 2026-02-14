@@ -403,9 +403,9 @@ const styles = StyleSheet.create({
   /* -------- purple middle -------- */
 
   middlePurple: {
-    flex: 1,
-    paddingTop: 14,
-    marginBottom: 30,
+   flex: 0.85,
+    paddingTop: 8,
+    marginBottom: 0,
   },
 
   gridWrapper: {
@@ -433,15 +433,11 @@ const styles = StyleSheet.create({
   alignItems: "center",
   justifyContent: "center",
   marginBottom: 6,
-
-  // ✅ glow
   shadowColor: "#ee6adc",
   shadowOffset: { width: 0, height: 0 },
   shadowRadius: 10,
-  elevation: 10, // android glow
+  elevation: 10,
 },
-
-
   avatar: {
     width: 56,
     height: 56,
@@ -467,15 +463,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  /* -------- bottom white -------- */
-
   bottomWhiteArea: {
     backgroundColor: "#fff",
     padding: 14,
     flexDirection: "row",
     borderTopLeftRadius: 26,
     borderTopRightRadius: 26,
-     marginBottom: 18,
+     marginBottom: 0,
   },
 
   bottomBtn: {

@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useState } from "react";
+import React, { useEffect, useContext, useState } from 'react';
 import {
   View,
   Text,
@@ -8,28 +8,24 @@ import {
   TextInput,
   ScrollView,
   Modal,
-} from "react-native";
-import LinearGradient from "react-native-linear-gradient";
-import Icon from "react-native-vector-icons/Ionicons";
-import { useDispatch, useSelector } from "react-redux";
-import { SocketContext } from "../socket/SocketProvider";
-import { userDatarequest } from "../features/user/userAction";
-import { femaleSearchRequest } from "../features/calls/callAction";
-
-import StoriesScreen from "./StoriesScreen";
-import OffersSectionScreen from "./OffersSectionScreen";
-import ActiveDostSectionScreen from "./ActiveDostSectionScreen";
-import LikeMindedSectionScreen from "../screens/LikeMindedSectionScreen";
-import GoOnlineCard from "../components/GoOnlineCard";
+} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { useDispatch, useSelector } from 'react-redux';
+import { SocketContext } from '../socket/SocketProvider';
+import { userDatarequest } from '../features/user/userAction';
+import { femaleSearchRequest } from '../features/calls/callAction';
+import StoriesScreen from './StoriesScreen';
+import OffersSectionScreen from './OffersSectionScreen';
+import ActiveDostSectionScreen from './ActiveDostSectionScreen';
+import LikeMindedSectionScreen from '../screens/LikeMindedSectionScreen';
+import GoOnlineCard from '../components/GoOnlineCard';
 
 const ReciverHomeScreen = ({ navigation }) => {
-
   const dispatch = useDispatch();
   const { connected } = useContext(SocketContext);
 
-  const incoming = useSelector(
-    (state) => state?.friends?.incoming || []
-  );
+  const incoming = useSelector(state => state?.friends?.incoming || []);
 
   const [showModal, setShowModal] = useState(false);
 
@@ -37,47 +33,43 @@ const ReciverHomeScreen = ({ navigation }) => {
     dispatch(userDatarequest());
   }, []);
 
-  const handleGoOnline = (type) => {
+  const handleGoOnline = type => {
     if (!connected) return;
 
     setShowModal(false);
 
     dispatch(femaleSearchRequest({ call_type: type }));
 
-    navigation.navigate("CallStatusScreen", {
+    navigation.navigate('CallStatusScreen', {
       call_type: type,
-      role: "female",
+      role: 'female',
     });
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView showsVerticalScrollIndicator={false}>
-
         {/* ===== HEADER ===== */}
         <LinearGradient
-          colors={["#F6D8FF", "#FDE2F3"]}
+          colors={['#F6D8FF', '#FDE2F3']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.header}
         >
-
           <View style={styles.topRow}>
-
             <View style={styles.coinBox}>
               <Icon name="logo-bitcoin" size={14} color="#FFB800" />
               <Text style={styles.coinText}>2999</Text>
             </View>
 
             <View style={styles.headerRightIcons}>
-
               <TouchableOpacity style={styles.roundIcon}>
                 <Icon name="gift-outline" size={18} color="#A855F7" />
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.roundIcon}
-                onPress={() => navigation.navigate("FriendRequestsScreen")}
+                onPress={() => navigation.navigate('FriendRequestsScreen')}
               >
                 <Icon name="notifications-outline" size={18} color="#A855F7" />
 
@@ -90,15 +82,18 @@ const ReciverHomeScreen = ({ navigation }) => {
 
               <TouchableOpacity
                 style={styles.roundIcon}
-                onPress={() => navigation.navigate("MessagesScreen")}
+                onPress={() => navigation.navigate('MessagesScreen')}
               >
-                <Icon name="chatbubble-ellipses-outline" size={18} color="#A855F7" />
+                <Icon
+                  name="chatbubble-ellipses-outline"
+                  size={18}
+                  color="#A855F7"
+                />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.avatarBox}>
                 <Icon name="person" size={16} color="#A855F7" />
               </TouchableOpacity>
-
             </View>
           </View>
 
@@ -110,39 +105,31 @@ const ReciverHomeScreen = ({ navigation }) => {
               style={styles.searchInput}
             />
           </View>
-
         </LinearGradient>
 
-        {/* ===== STORIES ===== */}
         <StoriesScreen />
 
-        {/* ===== OFFERS ===== */}
         <OffersSectionScreen />
 
-        {/* ===== LIKE MINDED ===== */}
         <LikeMindedSectionScreen />
 
-        {/* ===== ACTIVE DOST ===== */}
         <ActiveDostSectionScreen />
 
-        {/* ===== GO ONLINE CARD ===== */}
-        {/* ===== GO ONLINE CARD ===== */}
-<View style={styles.goOnlineWrap}>
-  <GoOnlineCard navigation={navigation} />
-</View>
-
+       
+        <View style={styles.goOnlineWrap}>
+          <GoOnlineCard navigation={navigation} />
+        </View>
       </ScrollView>
 
       {/* ===== CALL TYPE MODAL ===== */}
       <Modal transparent visible={showModal} animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-
             <Text style={styles.modalTitle}>Go Online</Text>
 
             <TouchableOpacity
               style={styles.callBtn}
-              onPress={() => handleGoOnline("AUDIO")}
+              onPress={() => handleGoOnline('AUDIO')}
             >
               <Icon name="call-outline" size={22} color="#fff" />
               <Text style={styles.callText}>Audio Call</Text>
@@ -150,7 +137,7 @@ const ReciverHomeScreen = ({ navigation }) => {
 
             <TouchableOpacity
               style={[styles.callBtn, styles.videoBtn]}
-              onPress={() => handleGoOnline("VIDEO")}
+              onPress={() => handleGoOnline('VIDEO')}
             >
               <Icon name="videocam-outline" size={22} color="#fff" />
               <Text style={styles.callText}>Video Call</Text>
@@ -159,23 +146,19 @@ const ReciverHomeScreen = ({ navigation }) => {
             <TouchableOpacity onPress={() => setShowModal(false)}>
               <Text style={styles.closeText}>Cancel</Text>
             </TouchableOpacity>
-
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 };
 
 export default ReciverHomeScreen;
 
-/* ================= STYLES ================= */
-
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
   },
 
   header: {
@@ -187,30 +170,30 @@ const styles = StyleSheet.create({
   },
 
   topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   coinBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
   },
 
   coinText: {
-    color: "#FFB800",
-    fontWeight: "700",
+    color: '#FFB800',
+    fontWeight: '700',
     marginLeft: 6,
     fontSize: 13,
   },
 
   headerRightIcons: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
 
@@ -218,44 +201,44 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   avatarBox: {
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   badge: {
-    position: "absolute",
+    position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: "#FF3B3B",
+    backgroundColor: '#FF3B3B',
     borderRadius: 9,
     minWidth: 16,
     height: 16,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 3,
   },
 
   badgeText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: '700',
   },
 
   searchBox: {
     marginTop: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 40,
@@ -265,7 +248,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 6,
     fontSize: 14,
-    color: "#A855F7",
+    color: '#A855F7',
   },
 
   goOnlineWrap: {
@@ -275,83 +258,83 @@ const styles = StyleSheet.create({
   },
 
   outerPill: {
-    width: "100%",
+    width: '100%',
     height: 110,
     borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
     elevation: 5,
   },
 
   innerPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 26,
     paddingVertical: 10,
     borderRadius: 30,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
 
   innerText: {
     marginLeft: 10,
-    color: "#fff",
+    color: '#fff',
     fontSize: 15,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: 1,
   },
 
-  heart1: { position: "absolute", left: 18, top: 12 },
-  heart2: { position: "absolute", left: 120, top: 8 },
-  heart3: { position: "absolute", right: 70, top: 10 },
-  heart4: { position: "absolute", right: 30, bottom: 10 },
+  heart1: { position: 'absolute', left: 18, top: 12 },
+  heart2: { position: 'absolute', left: 120, top: 8 },
+  heart3: { position: 'absolute', right: 70, top: 10 },
+  heart4: { position: 'absolute', right: 30, bottom: 10 },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   modalBox: {
-    backgroundColor: "#1a0033",
+    backgroundColor: '#1a0033',
     padding: 25,
     borderRadius: 20,
-    width: "80%",
-    alignItems: "center",
+    width: '80%',
+    alignItems: 'center',
   },
 
   modalTitle: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 20,
-    fontWeight: "700",
+    fontWeight: '700',
     marginBottom: 20,
   },
 
   callBtn: {
-    flexDirection: "row",
-    backgroundColor: "#ff00ff",
+    flexDirection: 'row',
+    backgroundColor: '#ff00ff',
     padding: 14,
     borderRadius: 30,
-    alignItems: "center",
+    alignItems: 'center',
     marginBottom: 14,
-    width: "100%",
-    justifyContent: "center",
+    width: '100%',
+    justifyContent: 'center',
   },
 
   videoBtn: {
-    backgroundColor: "#ff005c",
+    backgroundColor: '#ff005c',
   },
 
   callText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
     marginLeft: 10,
   },
 
   closeText: {
-    color: "#aaa",
+    color: '#aaa',
     marginTop: 10,
   },
 });

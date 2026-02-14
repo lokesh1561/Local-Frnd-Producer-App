@@ -1,10 +1,4 @@
-import React, {
-  useEffect,
-  useContext,
-  useRef,
-  useState,
-  useMemo,
-} from "react";
+import React, { useEffect, useContext, useRef, useState, useMemo } from 'react';
 
 import {
   View,
@@ -16,13 +10,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-} from "react-native";
+} from 'react-native';
 
-import LinearGradient from "react-native-linear-gradient";
-import Ionicons from "react-native-vector-icons/Ionicons";
+import LinearGradient from 'react-native-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+// ✅ fix
+import AudioRecorderPlayer from 'react-native-audio-recorder-player';
 
-import { useDispatch, useSelector } from "react-redux";
-import { SocketContext } from "../socket/SocketProvider";
+import { useDispatch, useSelector } from 'react-redux';
+import { SocketContext } from '../socket/SocketProvider';
+import { friendCallRequest } from '../features/calls/callAction';
 
 import {
   chatHistoryRequest,
@@ -30,12 +27,12 @@ import {
   chatMarkReadRequest,
   chatSetActive,
   chatClearActive,
-} from "../features/chat/chatAction";
+} from '../features/chat/chatAction';
 
 /* helpers */
 
-const getDayLabel = (dateStr) => {
-  if (!dateStr) return "";
+const getDayLabel = dateStr => {
+  if (!dateStr) return '';
 
   const d = new Date(dateStr);
   const today = new Date();
@@ -47,24 +44,24 @@ const getDayLabel = (dateStr) => {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
-  if (same(d, today)) return "Today";
-  if (same(d, yesterday)) return "Yesterday";
+  if (same(d, today)) return 'Today';
+  if (same(d, yesterday)) return 'Yesterday';
 
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+  return d.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
 };
 
-const getLastSeenText = (dateStr) => {
-  if (!dateStr) return "Offline";
+const getLastSeenText = dateStr => {
+  if (!dateStr) return 'Offline';
 
   const d = new Date(dateStr);
   const now = new Date();
   const diff = Math.floor((now - d) / 1000);
 
-  if (diff < 60) return "Last seen just now";
+  if (diff < 60) return 'Last seen just now';
   if (diff < 3600) return `Last seen ${Math.floor(diff / 60)} min ago`;
   if (diff < 86400) return `Last seen ${Math.floor(diff / 3600)} hr ago`;
 
@@ -73,34 +70,50 @@ const getLastSeenText = (dateStr) => {
 
 const HeartsBackground = () => (
   <View pointerEvents="none" style={styles.heartsLayer}>
-    <Image source={require("../assets/rightheart.png")} style={[styles.heartBig, { top: 40, left: 20 }]} />
-    <Image source={require("../assets/rightheart.png")} style={[styles.heartSmall, { top: 130, right: 40 }]} />
-    <Image source={require("../assets/rightheart.png")} style={[styles.heartBig, { top: 260, left: 80 }]} />
-    <Image source={require("../assets/rightheart.png")} style={[styles.heartSmall, { bottom: 260, right: 60 }]} />
-    <Image source={require("../assets/rightheart.png")} style={[styles.heartBig, { bottom: 120, left: 40 }]} />
+    <Image
+      source={require('../assets/rightheart.png')}
+      style={[styles.heartBig, { top: 40, left: 20 }]}
+    />
+    <Image
+      source={require('../assets/rightheart.png')}
+      style={[styles.heartSmall, { top: 130, right: 40 }]}
+    />
+    <Image
+      source={require('../assets/rightheart.png')}
+      style={[styles.heartBig, { top: 260, left: 80 }]}
+    />
+    <Image
+      source={require('../assets/rightheart.png')}
+      style={[styles.heartSmall, { bottom: 260, right: 60 }]}
+    />
+    <Image
+      source={require('../assets/rightheart.png')}
+      style={[styles.heartBig, { bottom: 120, left: 40 }]}
+    />
   </View>
 );
 
 const ChatScreen = ({ route, navigation }) => {
-
   const { user } = route.params;
   const { socketRef } = useContext(SocketContext);
+  console.log(require('react-native-audio-recorder-player'));
 
   const dispatch = useDispatch();
   const flatRef = useRef(null);
+  const audioRecorderPlayer = useRef(AudioRecorderPlayer).current;
+
+  const [isRecording, setIsRecording] = useState(false);
+  const recordPath = useRef(null);
 
   const conversationId = useSelector(
-    s => s.chat.conversationIds?.[user.user_id]
+    s => s.chat.conversationIds?.[user.user_id],
   );
 
-  const myId = useSelector(
-    s => s.user.userdata?.user?.user_id
-  );
+  const myId = useSelector(s => s.user.userdata?.user?.user_id);
 
-  const messages =
-    useSelector(s => s.chat.conversations[user.user_id]) || [];
+  const messages = useSelector(s => s.chat.conversations[user.user_id]) || [];
 
-  const [text, setText] = useState("");
+  const [text, setText] = useState('');
 
   /* active chat */
 
@@ -128,16 +141,14 @@ const ChatScreen = ({ route, navigation }) => {
     dispatch(chatUnreadClear(user.user_id));
   }, [dispatch, user.user_id]);
 
-  /* ---------------- SOCKET READ (correct) ---------------- */
+  /* ---------------- SOCKET READ ---------------- */
 
   const lastReadSentRef = useRef(new Set());
 
   useEffect(() => {
-
     if (!socketRef.current) return;
 
     messages.forEach(m => {
-
       const msg = m.message ?? m;
 
       if (
@@ -145,33 +156,78 @@ const ChatScreen = ({ route, navigation }) => {
         msg.is_read === 0 &&
         !lastReadSentRef.current.has(msg.message_id)
       ) {
-
         lastReadSentRef.current.add(msg.message_id);
 
-        socketRef.current.emit("chat_read", {
-          messageId: msg.message_id
+        socketRef.current.emit('chat_read', {
+          messageId: msg.message_id,
         });
       }
     });
-
   }, [messages, socketRef, user.user_id]);
 
-  /* send */
+  /* send text */
 
   const sendMessage = () => {
     if (!text.trim()) return;
 
-    socketRef.current?.emit("chat_send", {
+    socketRef.current?.emit('chat_send', {
       receiverId: user.user_id,
       content: text,
-      message_type: "text",
+      message_type: 'text',
     });
 
-    setText("");
+    setText('');
+  };
+
+  /* audio record */
+
+  const startRecording = async () => {
+    try {
+      setIsRecording(true);
+
+      const path = await audioRecorderPlayer.startRecorder();
+
+      recordPath.current = path;
+    } catch (e) {
+      console.log('startRecording error', e);
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = async () => {
+    try {
+      const path = await audioRecorderPlayer.stopRecorder();
+
+      setIsRecording(false);
+
+      if (!path) return;
+
+      socketRef.current?.emit('chat_send', {
+        receiverId: user.user_id,
+        content: path,
+        message_type: 'audio',
+      });
+    } catch (e) {
+      console.log('stopRecording error', e);
+      setIsRecording(false);
+    }
+  };
+  const startFriendCall = type => {
+    console.log('Starting friend call with type:', type);
+    dispatch(
+      friendCallRequest({
+        friend_id: user.user_id,
+        call_type: type,
+      }),
+    );
+
+    navigation.navigate("CallStatusScreen", {
+    call_type: type,
+    
+  });
   };
 
   const messagesWithDate = useMemo(() => {
-
     const map = new Map();
 
     messages.forEach(item => {
@@ -180,35 +236,32 @@ const ChatScreen = ({ route, navigation }) => {
     });
 
     const sorted = [...map.values()].sort(
-      (a, b) => new Date(a.sent_at) - new Date(b.sent_at)
+      (a, b) => new Date(a.sent_at) - new Date(b.sent_at),
     );
 
     const out = [];
     let last = null;
 
     sorted.forEach(msg => {
-
       const label = getDayLabel(msg.sent_at);
 
       if (label && label !== last) {
         out.push({
-          type: "date",
-          id: "d-" + label + "-" + msg.message_id,
+          type: 'date',
+          id: 'd-' + label + '-' + msg.message_id,
           label,
         });
         last = label;
       }
 
-      out.push({ type: "msg", ...msg });
+      out.push({ type: 'msg', ...msg });
     });
 
     return out;
-
   }, [messages]);
 
   const renderItem = ({ item }) => {
-
-    if (item.type === "date") {
+    if (item.type === 'date') {
       return (
         <View style={styles.dateWrap}>
           <Text style={styles.dateText}>{item.label}</Text>
@@ -220,32 +273,31 @@ const ChatScreen = ({ route, navigation }) => {
 
     const time = item.sent_at
       ? new Date(item.sent_at).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
+          hour: '2-digit',
+          minute: '2-digit',
         })
-      : "";
+      : '';
 
     return (
-      <View style={[
-        styles.bubble,
-        isMe ? styles.myBubble : styles.otherBubble,
-      ]}>
-        <Text style={[styles.msgText, isMe && { color: "#fff" }]}>
-          {item.content}
+      <View
+        style={[styles.bubble, isMe ? styles.myBubble : styles.otherBubble]}
+      >
+        <Text style={[styles.msgText, isMe && { color: '#fff' }]}>
+          {item.message_type === 'audio' ? '🎤 Voice message' : item.content}
         </Text>
 
         <View style={styles.metaRow}>
           {!!time && (
-            <Text style={[styles.timeText, isMe && { color: "#eee" }]}>
+            <Text style={[styles.timeText, isMe && { color: '#eee' }]}>
               {time}
             </Text>
           )}
 
           {isMe && (
             <Ionicons
-              name={item.is_read ? "checkmark-done" : "checkmark"}
+              name={item.is_read ? 'checkmark-done' : 'checkmark'}
               size={14}
-              color={item.is_read ? "#7CFCFF" : "#ddd"}
+              color={item.is_read ? '#7CFCFF' : '#ddd'}
               style={{ marginLeft: 4 }}
             />
           )}
@@ -262,10 +314,7 @@ const ChatScreen = ({ route, navigation }) => {
     null;
 
   const lastSeenValue =
-    user?.last_seen ||
-    user?.lastSeen ||
-    user?.last_active ||
-    null;
+    user?.last_seen || user?.lastSeen || user?.last_active || null;
 
   return (
     <View style={styles.container}>
@@ -273,14 +322,12 @@ const ChatScreen = ({ route, navigation }) => {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-
         <LinearGradient
-          colors={["#F3E7FF", "#FCE6F6"]}
+          colors={['#F3E7FF', '#FCE6F6']}
           style={styles.chatHeader}
         >
-
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => navigation.goBack()}
@@ -289,38 +336,48 @@ const ChatScreen = ({ route, navigation }) => {
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
-
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.headerAvatar} />
             ) : (
               <View style={styles.headerPlaceholder}>
                 <Text style={styles.headerPlaceholderText}>
-                  {user?.name?.[0]?.toUpperCase() || "?"}
+                  {user?.name?.[0]?.toUpperCase() || '?'}
                 </Text>
               </View>
             )}
 
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.headerName} numberOfLines={1}>
                 {user?.name}
               </Text>
 
               <Text style={styles.headerStatus}>
                 {Number(user?.is_online) === 1
-                  ? "Active now"
+                  ? 'Active now'
                   : getLastSeenText(lastSeenValue)}
               </Text>
             </View>
 
+            <TouchableOpacity
+              style={styles.headerIconBtn}
+              onPress={() => startFriendCall('AUDIO')}
+            >
+              <Ionicons name="call-outline" size={20} color="#111" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.headerIconBtn}
+              onPress={() => startFriendCall('VIDEO')}
+            >
+              <Ionicons name="videocam-outline" size={22} color="#111" />
+            </TouchableOpacity>
           </View>
         </LinearGradient>
 
         <FlatList
           ref={flatRef}
           data={messagesWithDate}
-          keyExtractor={(i) =>
-            i.type === "date" ? i.id : String(i.message_id)
-          }
+          keyExtractor={i => (i.type === 'date' ? i.id : String(i.message_id))}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
@@ -330,6 +387,9 @@ const ChatScreen = ({ route, navigation }) => {
         />
 
         <View style={styles.inputBar}>
+          <TouchableOpacity style={styles.iconBtn}>
+            <Ionicons name="attach-outline" size={22} color="#666" />
+          </TouchableOpacity>
 
           <TextInput
             placeholder="Type a message..."
@@ -339,12 +399,25 @@ const ChatScreen = ({ route, navigation }) => {
             placeholderTextColor="#999"
           />
 
+          <TouchableOpacity
+            style={[
+              styles.iconBtn,
+              isRecording && { backgroundColor: '#ffe6ef' },
+            ]}
+            onPressIn={startRecording}
+            onPressOut={stopRecording}
+          >
+            <Ionicons
+              name={isRecording ? 'mic' : 'mic-outline'}
+              size={22}
+              color={isRecording ? '#ff2d55' : '#666'}
+            />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
             <Ionicons name="send" size={18} color="#fff" />
           </TouchableOpacity>
-
         </View>
-
       </KeyboardAvoidingView>
     </View>
   );
@@ -352,42 +425,44 @@ const ChatScreen = ({ route, navigation }) => {
 
 export default ChatScreen;
 
-/* styles unchanged */
-
+/* styles */
 
 const styles = StyleSheet.create({
-
-  container: { flex: 1, backgroundColor: "#fdeefe" },
+  container: { flex: 1, backgroundColor: '#fdeefe' },
 
   heartsLayer: { ...StyleSheet.absoluteFillObject },
 
   heartBig: {
-    position: "absolute",
+    position: 'absolute',
     width: 90,
     height: 90,
     opacity: 0.12,
-    tintColor: "#ff3b7a",
+    tintColor: '#ff3b7a',
   },
 
   heartSmall: {
-    position: "absolute",
+    position: 'absolute',
     width: 55,
     height: 55,
     opacity: 0.1,
-    tintColor: "#270227"
+    tintColor: '#270227',
   },
 
   chatHeader: {
     height: 72,
     paddingHorizontal: 14,
-    paddingTop: Platform.OS === "android" ? 30 : 8,
-    flexDirection: "row",
-    alignItems: "center",
+    paddingTop: Platform.OS === 'android' ? 30 : 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   backBtn: { width: 34 },
 
-  headerCenter: { flex: 1, flexDirection: "row", alignItems: "center" },
+  headerCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
 
   headerAvatar: {
     width: 38,
@@ -395,36 +470,45 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     marginRight: 10,
     borderWidth: 2,
-    borderColor: "#C51DAF",
+    borderColor: '#C51DAF',
   },
 
   headerPlaceholder: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#C51DAF",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#C51DAF',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 10,
   },
 
-  headerPlaceholderText: { color: "#fff", fontWeight: "700" },
+  headerPlaceholderText: { color: '#fff', fontWeight: '700' },
 
-  headerName: { fontSize: 15, fontWeight: "700", color: "#111" },
+  headerName: { fontSize: 15, fontWeight: '700', color: '#111' },
 
-  headerStatus: { fontSize: 11, color: "#6A6A6A" },
+  headerStatus: { fontSize: 11, color: '#6A6A6A' },
+
+  headerIconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 6,
+  },
 
   list: { paddingHorizontal: 14, paddingVertical: 10 },
 
-  dateWrap: { alignItems: "center", marginVertical: 10 },
+  dateWrap: { alignItems: 'center', marginVertical: 10 },
 
   dateText: {
-    backgroundColor: "rgba(255,255,255,0.8)",
+    backgroundColor: 'rgba(255,255,255,0.8)',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
     fontSize: 12,
-    color: "#666",
+    color: '#666',
   },
 
   bubble: {
@@ -432,48 +516,63 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 16,
     marginVertical: 6,
-    maxWidth: "78%",
+    maxWidth: '78%',
   },
 
-  myBubble: { alignSelf: "flex-end", backgroundColor: "#7e00ff" },
+  myBubble: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#7e00ff',
+  },
 
-  otherBubble: { alignSelf: "flex-start", backgroundColor: "#fff" },
+  otherBubble: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#fff',
+  },
 
-  msgText: { fontSize: 15, color: "#222" },
+  msgText: { fontSize: 15, color: '#222' },
 
   metaRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    marginTop: 4
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 4,
   },
 
   timeText: { fontSize: 10 },
 
   inputBar: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 8,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
 
   input: {
     flex: 1,
-    backgroundColor: "#f1f1f1",
+    backgroundColor: '#f1f1f1',
     borderRadius: 25,
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
   },
 
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+
   sendBtn: {
-    marginLeft: 8,
-    backgroundColor: "#7e00ff",
+    marginLeft: 4,
+    backgroundColor: '#7e00ff',
     width: 42,
     height: 42,
     borderRadius: 21,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
