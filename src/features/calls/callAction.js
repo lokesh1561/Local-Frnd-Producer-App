@@ -95,3 +95,35 @@ export const directCallFailed = (error) => ({
 export const clearCall = () => ({
   type: T.CLEAR_CALL,
 });
+
+
+export const friendCallRequest = (payload) => ({
+  type: T.FRIEND_CALL_REQUEST,
+  payload, // { friend_id, call_type }
+});
+
+export const friendCallSuccess = (data) => ({
+  type: T.FRIEND_CALL_SUCCESS,
+  payload: data,
+});
+
+export const friendCallFailed = (error) => ({
+  type: T.FRIEND_CALL_FAILED,
+  payload: error,
+});
+
+export const incomingCallRinging = (payload) => ({
+  type: T.INCOMING_CALL_RINGING,
+  payload
+});
+
+export const incomingCallAccept = (payload) => ({
+  type: T.INCOMING_CALL_ACCEPT,
+  payload
+});
+
+export const incomingCallReject = (payload) => ({
+  type: T.INCOMING_CALL_REJECT,
+  payload
+});
+

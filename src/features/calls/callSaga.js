@@ -16,6 +16,8 @@ import {
   callDetailsFailed,
   directCallSuccess,
   directCallFailed,
+  friendCallSuccess,
+  friendCallFailed
 } from "./callAction";
 
 import {
@@ -24,10 +26,10 @@ import {
   female_cancel,
   searching_females,
   call_connected_details,
-  direct_call 
+  direct_call,
+  friend_connect 
 } from "../../api/userApi";
 
-/* ================= 👨 MALE RANDOM CALL ================= */
 function* maleCallSaga(action) {
   try {
     console.log("Male Call Saga Payload:", action.payload); 
@@ -48,7 +50,6 @@ console.log("Male Call Response:", res);
   }
 }
 
-/* ================= 👩 FEMALE START SEARCH ================= */
 function* femaleSearchSaga(action) {
   try {
     const token = yield call(AsyncStorage.getItem, "twittoke");
@@ -69,7 +70,6 @@ console.log("Female Search Response:", res);
   }
 }
 
-/* ================= 👩 FEMALE CANCEL SEARCH ================= */
 function* femaleCancelSaga() {
   try {
     const token = yield call(AsyncStorage.getItem, "twittoke");
@@ -87,7 +87,6 @@ function* femaleCancelSaga() {
   }
 }
 
-/* ================= 👨 SEARCHING FEMALES LIST ================= */
 function* searchingFemalesSaga() {
   try {
     const token = yield call(AsyncStorage.getItem, "twittoke");
@@ -145,7 +144,29 @@ function* directCallSaga(action) {
   }
 }
 
-/* ================= WATCHERS ================= */
+function* friendCallSaga(action) {
+  try {
+    const token = yield call(AsyncStorage.getItem, "twittoke");
+console.log(action.payload, "Friend Call Saga Payload:"); 
+    const res = yield call(
+      axios.post,
+      friend_connect,
+      action.payload,     
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+console.log("Friend Call Response:", res);
+    yield put(friendCallSuccess(res.data));
+
+  } catch (e) {
+    yield put(
+      friendCallFailed(
+        e.response?.data?.error || e.message
+      )
+    );
+  }
+}
+
+
 export default function* callSaga() {
   yield takeLatest(T.CALL_REQUEST, maleCallSaga);
   yield takeLatest(T.FEMALE_SEARCH_REQUEST, femaleSearchSaga);
@@ -153,5 +174,6 @@ export default function* callSaga() {
   yield takeLatest(T.SEARCHING_FEMALES_REQUEST, searchingFemalesSaga);
   yield takeLatest(T.CALL_DETAILS_REQUEST, callDetailsSaga);
   yield takeLatest(T.DIRECT_CALL_REQUEST, directCallSaga);
+  yield takeLatest(T.FRIEND_CALL_REQUEST, friendCallSaga);
 
 }

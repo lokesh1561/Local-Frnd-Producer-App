@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useContext } from "react";
+import React, { useEffect, useRef, useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -6,18 +6,18 @@ import {
   TouchableOpacity,
   Platform,
   PermissionsAndroid,
-} from "react-native";
+} from 'react-native';
 
-import LinearGradient from "react-native-linear-gradient";
-import Ionicons from "react-native-vector-icons/Ionicons";
-import { RTCView, mediaDevices } from "react-native-webrtc";
-import { CommonActions } from "@react-navigation/native";
-import InCallManager from "react-native-incall-manager";
-import { useDispatch } from "react-redux";
-import { clearCall } from "../features/calls/callAction";
-import { SocketContext } from "../socket/SocketProvider";
-import { createPC } from "../utils/webrtc";
-import EndCallConfirmModal from "../screens/EndCallConfirmationScreen";
+import LinearGradient from 'react-native-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { RTCView, mediaDevices } from 'react-native-webrtc';
+import { CommonActions } from '@react-navigation/native';
+import InCallManager from 'react-native-incall-manager';
+import { useDispatch } from 'react-redux';
+import { clearCall } from '../features/calls/callAction';
+import { SocketContext } from '../socket/SocketProvider';
+import { createPC } from '../utils/webrtc';
+import EndCallConfirmModal from '../screens/EndCallConfirmationScreen';
 
 const VideocallScreen = ({ route, navigation }) => {
   const { session_id, role } = route.params;
@@ -42,17 +42,17 @@ const VideocallScreen = ({ route, navigation }) => {
   const [cameraOn, setCameraOn] = useState(true);
   const [speakerOn, setSpeakerOn] = useState(false);
   const [seconds, setSeconds] = useState(0);
-const [activeBtn, setActiveBtn] = useState(null);
+  const [activeBtn, setActiveBtn] = useState(null);
 
   /* ================= PERMISSION ================= */
   const requestPermission = async () => {
-    if (Platform.OS !== "android") return true;
+    if (Platform.OS !== 'android') return true;
 
     const mic = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO
+      PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
     );
     const cam = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.CAMERA
+      PermissionsAndroid.PERMISSIONS.CAMERA,
     );
 
     return (
@@ -75,59 +75,59 @@ const [activeBtn, setActiveBtn] = useState(null);
         return;
       }
 
-      InCallManager.start({ media: "audio" });
+      InCallManager.start({ media: 'audio' });
       InCallManager.setMicrophoneMute(false);
       InCallManager.setSpeakerphoneOn(false);
 
       pcRef.current = createPC({
-        onIceCandidate: (candidate) => {
-          socket.emit("video_ice_candidate", { session_id, candidate });
+        onIceCandidate: candidate => {
+          socket.emit('video_ice_candidate', { session_id, candidate });
         },
-        onTrack: (stream) => {
-          stream.getAudioTracks().forEach((t) => (t.enabled = true));
+        onTrack: stream => {
+          stream.getAudioTracks().forEach(t => (t.enabled = true));
           setRemoteStream(stream);
         },
       });
 
       const stream = await mediaDevices.getUserMedia({
         audio: true,
-        video: { facingMode: "user" },
+        video: { facingMode: 'user' },
       });
 
       localStreamRef.current = stream;
-      stream.getTracks().forEach((t) => pcRef.current.addTrack(t, stream));
+      stream.getTracks().forEach(t => pcRef.current.addTrack(t, stream));
 
-      socket.emit("video_join", { session_id });
+      socket.emit('video_join', { session_id });
 
-      socket.on("video_offer", onOffer);
-      socket.on("video_answer", onAnswer);
-      socket.on("video_ice_candidate", onIce);
-      socket.on("video_call_ended", () => cleanup(false));
+      socket.on('video_offer', onOffer);
+      socket.on('video_answer', onAnswer);
+      socket.on('video_ice_candidate', onIce);
+      socket.on('video_call_ended', () => cleanup(false));
 
-      socket.on("video_connected", async () => {
-        if (role !== "caller") return;
+      socket.on('video_connected', async () => {
+        if (role !== 'caller') return;
 
         const offer = await pcRef.current.createOffer();
         await pcRef.current.setLocalDescription(offer);
-        socket.emit("video_offer", { session_id, offer });
+        socket.emit('video_offer', { session_id, offer });
       });
     };
 
     start();
 
     return () => {
-      socket.off("video_offer", onOffer);
-      socket.off("video_answer", onAnswer);
-      socket.off("video_ice_candidate", onIce);
-      socket.off("video_call_ended");
-      socket.off("video_connected");
+      socket.off('video_offer', onOffer);
+      socket.off('video_answer', onAnswer);
+      socket.off('video_ice_candidate', onIce);
+      socket.off('video_call_ended');
+      socket.off('video_connected');
     };
   }, [connected]);
 
   /* ================= HEARTBEAT ================= */
   useEffect(() => {
     const ping = setInterval(() => {
-      socketRef.current?.emit("video_ping", { session_id });
+      socketRef.current?.emit('video_ping', { session_id });
     }, 15000);
 
     return () => clearInterval(ping);
@@ -155,7 +155,7 @@ const [activeBtn, setActiveBtn] = useState(null);
     const answer = await pcRef.current.createAnswer();
     await pcRef.current.setLocalDescription(answer);
 
-    socketRef.current.emit("video_answer", { session_id, answer });
+    socketRef.current.emit('video_answer', { session_id, answer });
     onConnected();
   };
 
@@ -187,7 +187,7 @@ const [activeBtn, setActiveBtn] = useState(null);
     setConnectedUI(true);
 
     timerRef.current = setInterval(() => {
-      setSeconds((s) => s + 1);
+      setSeconds(s => s + 1);
     }, 1000);
   };
 
@@ -209,7 +209,7 @@ const [activeBtn, setActiveBtn] = useState(null);
   };
 
   const toggleSpeaker = () => {
-    setSpeakerOn((prev) => {
+    setSpeakerOn(prev => {
       InCallManager.setSpeakerphoneOn(!prev);
       return !prev;
     });
@@ -232,22 +232,21 @@ const [activeBtn, setActiveBtn] = useState(null);
     clearInterval(timerRef.current);
 
     if (emit) {
-      socketRef.current?.emit("video_call_hangup", { session_id });
+      socketRef.current?.emit('video_call_hangup', { session_id });
     }
 
     InCallManager.stop();
 
-    localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    localStreamRef.current?.getTracks().forEach(t => t.stop());
     pcRef.current?.close();
 
-    const next =
-      role === "caller" ? "MaleHomeTabs" : "ReceiverBottomTabs";
+    const next = role === 'caller' ? 'MaleHomeTabs' : 'ReceiverBottomTabs';
 
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
         routes: [{ name: next }],
-      })
+      }),
     );
   };
 
@@ -278,58 +277,54 @@ const [activeBtn, setActiveBtn] = useState(null);
           {connectedUI
             ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(
                 2,
-                "0"
+                '0',
               )}`
-            : "Connecting…"}
+            : 'Connecting…'}
         </Text>
       </View>
 
       {/* Bottom floating bar */}
-      <LinearGradient
-        colors={["#1b1b1b", "#101010"]}
-        style={styles.bottomBar}
-      >
+      <LinearGradient colors={['#1b1b1b', '#101010']} style={styles.bottomBar}>
         <RoundBtn
-  id="speaker"
-  activeBtn={activeBtn}
-  setActiveBtn={setActiveBtn}
-  icon={speakerOn ? "volume-high" : "volume-mute"}
-  onPress={toggleSpeaker}
-/>
+          id="speaker"
+          activeBtn={activeBtn}
+          setActiveBtn={setActiveBtn}
+          icon={speakerOn ? 'volume-high' : 'volume-mute'}
+          onPress={toggleSpeaker}
+        />
 
-<RoundBtn
-  id="mic"
-  activeBtn={activeBtn}
-  setActiveBtn={setActiveBtn}
-  icon={micOn ? "mic" : "mic-off"}
-  onPress={toggleMic}
-/>
+        <RoundBtn
+          id="mic"
+          activeBtn={activeBtn}
+          setActiveBtn={setActiveBtn}
+          icon={micOn ? 'mic' : 'mic-off'}
+          onPress={toggleMic}
+        />
 
-<RoundBtn
-  id="camera"
-  activeBtn={activeBtn}
-  setActiveBtn={setActiveBtn}
-  icon={cameraOn ? "videocam" : "videocam-off"}
-  onPress={toggleCamera}
-/>
+        <RoundBtn
+          id="camera"
+          activeBtn={activeBtn}
+          setActiveBtn={setActiveBtn}
+          icon={cameraOn ? 'videocam' : 'videocam-off'}
+          onPress={toggleCamera}
+        />
 
-<RoundBtn
-  id="switch"
-  activeBtn={activeBtn}
-  setActiveBtn={setActiveBtn}
-  icon="camera-reverse"
-  onPress={switchCamera}
-/>
+        <RoundBtn
+          id="switch"
+          activeBtn={activeBtn}
+          setActiveBtn={setActiveBtn}
+          icon="camera-reverse"
+          onPress={switchCamera}
+        />
 
-<RoundBtn
-  id="end"
-  activeBtn={activeBtn}
-  setActiveBtn={setActiveBtn}
-  icon="call"
-  onPress={() => setShowEndModal(true)}
-  large
-/>
-
+        <RoundBtn
+          id="end"
+          activeBtn={activeBtn}
+          setActiveBtn={setActiveBtn}
+          icon="call"
+          onPress={() => setShowEndModal(true)}
+          large
+        />
       </LinearGradient>
 
       {/* End call modal */}
@@ -345,15 +340,7 @@ const [activeBtn, setActiveBtn] = useState(null);
   );
 };
 
-const RoundBtn = ({
-  id,
-  icon,
-  onPress,
-  large,
-  activeBtn,
-  setActiveBtn,
-}) => {
-
+const RoundBtn = ({ id, icon, onPress, large, activeBtn, setActiveBtn }) => {
   const isActive = activeBtn === id;
 
   const handlePress = () => {
@@ -369,14 +356,14 @@ const RoundBtn = ({
         styles.roundBtn,
         large && styles.endBtn,
         {
-          backgroundColor: isActive ? "#9b2a91" : "#ffffff",
+          backgroundColor: isActive ? '#9b2a91' : '#ffffff',
         },
       ]}
     >
       <Ionicons
         name={icon}
         size={large ? 30 : 22}
-        color={isActive ? "#ffffff" : "#9b2a91"}
+        color={isActive ? '#ffffff' : '#9b2a91'}
       />
     </TouchableOpacity>
   );
@@ -389,7 +376,7 @@ export default VideocallScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: '#000',
   },
 
   remote: {
@@ -397,23 +384,23 @@ const styles = StyleSheet.create({
   },
 
   local: {
-    position: "absolute",
+    position: 'absolute',
     top: 70,
     right: 16,
     width: 110,
     height: 160,
     borderRadius: 18,
-    overflow: "hidden",
+    overflow: 'hidden',
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: '#fff',
     zIndex: 10,
   },
 
   timerPill: {
-    position: "absolute",
+    position: 'absolute',
     top: 40,
-    alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
@@ -421,21 +408,21 @@ const styles = StyleSheet.create({
   },
 
   timerText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: '600',
   },
 
   bottomBar: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 24,
     left: 16,
     right: 16,
     height: 84,
     borderRadius: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-evenly",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
     paddingHorizontal: 12,
   },
 
@@ -443,8 +430,8 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   endBtn: {

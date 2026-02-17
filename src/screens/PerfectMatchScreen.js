@@ -1,6 +1,6 @@
 // PerfectMatchScreen.js
 
-import React, { useEffect } from "react";
+import React, { useEffect,useRef  } from "react";
 import { View, Text, StyleSheet, Image, StatusBar } from "react-native";
 import { useSelector } from "react-redux";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -55,6 +55,9 @@ const PerfectMatchScreen = () => {
   const route = useRoute();
 
   const { call_type, session_id } = route.params || {};
+const call = useSelector(state => state.calls?.call);
+const navigatedRef = useRef(false);
+
 
   const connectedCallDetails = useSelector(
     (state) => state?.calls?.connectedCallDetails
@@ -73,7 +76,7 @@ const PerfectMatchScreen = () => {
     connectedCallDetails?.caller?.user_id === myId
       ? connectedCallDetails?.connected_user
       : connectedCallDetails?.caller;
-
+console.log("CONNECTED CALL DETAILS =>", connectedCallDetails); 
   useEffect(() => {
 
     if (!session_id || !call_type) return;
@@ -95,6 +98,34 @@ const PerfectMatchScreen = () => {
     return () => clearTimeout(t);
 
   }, [session_id, call_type, navigation]);
+
+useEffect(() => {
+
+  if (!call?.status) return;
+
+  const status = String(call.status).toUpperCase();
+
+  // Only react when this screen belongs to this call
+  if (call.session_id !== session_id) return;
+
+  if (status === "ACCEPTED" || status === "CONNECTED") {
+
+    if (navigatedRef.current) return;
+    navigatedRef.current = true;
+
+    navigation.replace(
+      call.call_type === "VIDEO"
+        ? "VideocallScreen"
+        : "AudiocallScreen",
+      {
+        session_id: call.session_id
+      }
+    );
+  }
+
+}, [call?.status]);
+
+
 
   return (
     <WelcomeScreenbackgroungpage>
