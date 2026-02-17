@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Animated
+  Animated,
+  ActivityIndicator
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { useDispatch, useSelector } from "react-redux";
@@ -24,26 +25,21 @@ const EndCallConfirmModal = ({
   otherUser
 }) => {
 
-  /* ---------------- redux ---------------- */
-
   const dispatch = useDispatch();
 
   const friendStatus = useSelector(s => s.friends.friendStatus);
   const incoming = useSelector(s => s.friends.incoming);
-
-  /* ---------------- state ---------------- */
+  const { loading } = useSelector(state => state.rating);
 
   const [rating, setRating] = useState(0);
   const [localPending, setLocalPending] = useState(false);
 
   const userId = otherUser?.user_id;
 
-  /* ---------------- animation refs ---------------- */
-
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim  = useRef(new Animated.Value(1)).current;
 
-  /* ---------------- effects ---------------- */
+  /* ---------------- FETCH FRIEND STATUS ---------------- */
 
   useEffect(() => {
     if (userId && visible) {
@@ -51,7 +47,9 @@ const EndCallConfirmModal = ({
       setRating(0);
       setLocalPending(false);
     }
-  }, [userId, visible, dispatch]);
+  }, [userId, visible]);
+
+  /* ---------------- ANIMATION ---------------- */
 
   useEffect(() => {
     if (!visible) return;
@@ -82,14 +80,11 @@ const EndCallConfirmModal = ({
     );
 
     anim.start();
+    return () => anim.stop();
 
-    return () => {
-      anim.stop();
-    };
+  }, [visible]);
 
-  }, [visible, rotateAnim, scaleAnim]);
-
-  /* ---------------- ui helpers ---------------- */
+  /* ---------------- FOLLOW BUTTON ---------------- */
 
   const renderFollowButton = () => {
     if (!userId) return null;
@@ -121,7 +116,6 @@ const EndCallConfirmModal = ({
           style={styles.followBtn}
           onPress={() => {
             dispatch(friendAcceptRequest(req.request_id));
-
             setTimeout(() => {
               dispatch(friendStatusRequest(userId));
             }, 300);
@@ -145,58 +139,55 @@ const EndCallConfirmModal = ({
     );
   };
 
-  /* ---------------- render ---------------- */
+  /* ---------------- RENDER ---------------- */
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-    >
+    <Modal visible={visible} transparent animationType="fade">
       <View style={styles.backdrop}>
         <View style={styles.card}>
 
-          {/* animated avatar ring */}
-
-          <Animated.View
-            style={[
-              styles.avatarOuter,
-              {
-                transform: [
-                  {
-                    rotate: rotateAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ["0deg", "360deg"]
-                    })
-                  },
-                  { scale: scaleAnim }
-                ]
-              }
-            ]}
-          >
-            <View style={styles.avatarRing}>
-              <Image
-                source={{ uri: otherUser?.avatar }}
-                style={styles.avatar}
-              />
-            </View>
-          </Animated.View>
+          {/* Avatar (NO fallback image) */}
+          {otherUser?.avatar && (
+            <Animated.View
+              style={[
+                styles.avatarOuter,
+                {
+                  transform: [
+                    {
+                      rotate: rotateAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: ["0deg", "360deg"]
+                      })
+                    },
+                    { scale: scaleAnim }
+                  ]
+                }
+              ]}
+            >
+              <View style={styles.avatarRing}>
+                <Image
+                  source={{ uri: otherUser.avatar }}
+                  style={styles.avatar}
+                />
+              </View>
+            </Animated.View>
+          )}
 
           <Text style={styles.name}>
-            {otherUser?.name}
+            {otherUser?.name || ""}
           </Text>
 
-          {/* rating */}
-
+          {/* ⭐ Rating */}
           <View style={styles.ratingRow}>
-            {[1, 2, 3, 4, 5].map(i => (
+            {[1,2,3,4,5].map(i => (
               <TouchableOpacity
                 key={i}
+                disabled={loading}
                 onPress={() => setRating(i)}
               >
                 <Ionicons
                   name={i <= rating ? "star" : "star-outline"}
-                  size={24}
+                  size={26}
                   color="#ffb300"
                 />
               </TouchableOpacity>
@@ -208,18 +199,25 @@ const EndCallConfirmModal = ({
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.cancelBtn}
+              disabled={loading}
               onPress={onCancel}
             >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.confirmBtn}
-              onPress={() => {
-                onConfirm(rating);
-              }}
+              style={[
+                styles.confirmBtn,
+                (loading || rating === 0) && { opacity: 0.6 }
+              ]}
+              disabled={loading || rating === 0}
+              onPress={() => onConfirm(rating)}
             >
-              <Text style={styles.confirmText}>Confirm</Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.confirmText}>Confirm</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -230,6 +228,8 @@ const EndCallConfirmModal = ({
 };
 
 export default EndCallConfirmModal;
+
+
 
 /* ---------------- styles ---------------- */
 

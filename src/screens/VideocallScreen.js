@@ -13,29 +13,46 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { RTCView, mediaDevices } from 'react-native-webrtc';
 import { CommonActions } from '@react-navigation/native';
 import InCallManager from 'react-native-incall-manager';
-import { useDispatch } from 'react-redux';
-import { clearCall } from '../features/calls/callAction';
+import { useDispatch, useSelector } from 'react-redux';
+import { submitRatingRequest } from "../features/rating/ratingAction";
+
+import { clearCall, callDetailsRequest } from '../features/calls/callAction';
 import { SocketContext } from '../socket/SocketProvider';
 import { createPC } from '../utils/webrtc';
 import EndCallConfirmModal from '../screens/EndCallConfirmationScreen';
 
 const VideocallScreen = ({ route, navigation }) => {
-  const { session_id, role } = route.params;
+  const { session_id, role } = route.params || {};
   const { socketRef, connected } = useContext(SocketContext);
 
   const dispatch = useDispatch();
 
+  /* ---------------- REDUX ---------------- */
+
+  const { userdata } = useSelector(state => state.user);
+  const myGender = userdata?.user?.gender;
+
+  const connectedCallDetails = useSelector(
+    state => state?.calls?.connectedCallDetails
+  );
+
+  const myId = useSelector(
+    state => state.auth?.user?.user_id
+  );
+const ratingState = useSelector(state => state.rating);
+const { loading: ratingLoading, success: ratingSuccess } = ratingState;
+
+  const caller = connectedCallDetails?.caller;
+  const connectedUser = connectedCallDetails?.connected_user;
+
+  const other =
+    String(caller?.user_id) === String(myId)
+      ? connectedUser
+      : caller;
+
+  /* ---------------- STATE ---------------- */
+
   const [showEndModal, setShowEndModal] = useState(false);
-
-  /* ================= REFS ================= */
-  const pcRef = useRef(null);
-  const localStreamRef = useRef(null);
-  const pendingIceRef = useRef([]);
-  const startedRef = useRef(false);
-  const endedRef = useRef(false);
-  const timerRef = useRef(null);
-
-  /* ================= STATE ================= */
   const [remoteStream, setRemoteStream] = useState(null);
   const [connectedUI, setConnectedUI] = useState(false);
   const [micOn, setMicOn] = useState(true);
@@ -44,7 +61,17 @@ const VideocallScreen = ({ route, navigation }) => {
   const [seconds, setSeconds] = useState(0);
   const [activeBtn, setActiveBtn] = useState(null);
 
-  /* ================= PERMISSION ================= */
+  /* ---------------- REFS ---------------- */
+
+  const pcRef = useRef(null);
+  const localStreamRef = useRef(null);
+  const pendingIceRef = useRef([]);
+  const startedRef = useRef(false);
+  const endedRef = useRef(false);
+  const timerRef = useRef(null);
+
+  /* ---------------- PERMISSION ---------------- */
+
   const requestPermission = async () => {
     if (Platform.OS !== 'android') return true;
 
@@ -61,7 +88,8 @@ const VideocallScreen = ({ route, navigation }) => {
     );
   };
 
-  /* ================= INIT ================= */
+  /* ---------------- INIT ---------------- */
+
   useEffect(() => {
     if (!connected || !socketRef.current || startedRef.current) return;
     startedRef.current = true;
@@ -76,7 +104,6 @@ const VideocallScreen = ({ route, navigation }) => {
       }
 
       InCallManager.start({ media: 'audio' });
-      InCallManager.setMicrophoneMute(false);
       InCallManager.setSpeakerphoneOn(false);
 
       pcRef.current = createPC({
@@ -95,20 +122,34 @@ const VideocallScreen = ({ route, navigation }) => {
       });
 
       localStreamRef.current = stream;
-      stream.getTracks().forEach(t => pcRef.current.addTrack(t, stream));
+      stream.getTracks().forEach(t =>
+        pcRef.current.addTrack(t, stream)
+      );
 
       socket.emit('video_join', { session_id });
 
       socket.on('video_offer', onOffer);
       socket.on('video_answer', onAnswer);
       socket.on('video_ice_candidate', onIce);
-      socket.on('video_call_ended', () => cleanup(false));
+socket.on('video_call_ended', () => {
+
+  // Stop call for BOTH users
+  stopCallMedia();
+
+  // Show rating modal for BOTH users
+  setShowEndModal(true);
+
+});
 
       socket.on('video_connected', async () => {
+        onConnected(); // start UI for both
+
         if (role !== 'caller') return;
+        if (!pcRef.current || !localStreamRef.current) return;
 
         const offer = await pcRef.current.createOffer();
         await pcRef.current.setLocalDescription(offer);
+
         socket.emit('video_offer', { session_id, offer });
       });
     };
@@ -124,16 +165,8 @@ const VideocallScreen = ({ route, navigation }) => {
     };
   }, [connected]);
 
-  /* ================= HEARTBEAT ================= */
-  useEffect(() => {
-    const ping = setInterval(() => {
-      socketRef.current?.emit('video_ping', { session_id });
-    }, 15000);
+  /* ---------------- SIGNALING ---------------- */
 
-    return () => clearInterval(ping);
-  }, []);
-
-  /* ================= SIGNALING ================= */
   const flushIce = async () => {
     if (!pcRef.current || endedRef.current) return;
 
@@ -156,6 +189,7 @@ const VideocallScreen = ({ route, navigation }) => {
     await pcRef.current.setLocalDescription(answer);
 
     socketRef.current.emit('video_answer', { session_id, answer });
+
     onConnected();
   };
 
@@ -164,6 +198,7 @@ const VideocallScreen = ({ route, navigation }) => {
 
     await pcRef.current.setRemoteDescription(answer);
     await flushIce();
+
     onConnected();
   };
 
@@ -180,22 +215,58 @@ const VideocallScreen = ({ route, navigation }) => {
     } catch {}
   };
 
-  /* ================= TIMER ================= */
+  /* ---------------- CONNECTED ---------------- */
+
   const onConnected = () => {
     if (timerRef.current) return;
 
     setConnectedUI(true);
+    dispatch(callDetailsRequest());
 
     timerRef.current = setInterval(() => {
       setSeconds(s => s + 1);
     }, 1000);
   };
+/* ================= STOP CALL MEDIA ================= */
 
-  /* ================= CONTROLS ================= */
+const stopCallMedia = () => {
+  if (endedRef.current) return;
+
+  endedRef.current = true;
+
+  clearInterval(timerRef.current);
+
+  InCallManager.stop();
+
+  localStreamRef.current?.getTracks().forEach(t => t.stop());
+  pcRef.current?.close();
+};
+
+/* ================= LEAVE SCREEN ================= */
+
+const leaveScreen = () => {
+
+  dispatch(clearCall());
+
+  const nextScreen =
+    myGender === 'Male'
+      ? 'MaleHomeTabs'
+      : 'ReceiverBottomTabs';
+
+  navigation.dispatch(
+    CommonActions.reset({
+      index: 0,
+      routes: [{ name: nextScreen }],
+    }),
+  );
+};
+
+
+  /* ---------------- CONTROLS ---------------- */
+
   const toggleMic = () => {
     const track = localStreamRef.current?.getAudioTracks()[0];
     if (!track) return;
-
     track.enabled = !track.enabled;
     setMicOn(track.enabled);
   };
@@ -203,7 +274,6 @@ const VideocallScreen = ({ route, navigation }) => {
   const toggleCamera = () => {
     const track = localStreamRef.current?.getVideoTracks()[0];
     if (!track) return;
-
     track.enabled = !track.enabled;
     setCameraOn(track.enabled);
   };
@@ -222,38 +292,10 @@ const VideocallScreen = ({ route, navigation }) => {
     }
   };
 
-  /* ================= CLEANUP ================= */
-  const cleanup = (emit = true) => {
-    if (endedRef.current) return;
+  /* ---------------- UI ---------------- */
 
-    endedRef.current = true;
-
-    dispatch(clearCall());
-    clearInterval(timerRef.current);
-
-    if (emit) {
-      socketRef.current?.emit('video_call_hangup', { session_id });
-    }
-
-    InCallManager.stop();
-
-    localStreamRef.current?.getTracks().forEach(t => t.stop());
-    pcRef.current?.close();
-
-    const next = role === 'caller' ? 'MaleHomeTabs' : 'ReceiverBottomTabs';
-
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: next }],
-      }),
-    );
-  };
-
-  /* ================= UI ================= */
   return (
     <View style={styles.container}>
-      {/* Remote */}
       {remoteStream && (
         <RTCView
           streamURL={remoteStream.toURL()}
@@ -262,7 +304,6 @@ const VideocallScreen = ({ route, navigation }) => {
         />
       )}
 
-      {/* Local preview */}
       {localStreamRef.current && (
         <RTCView
           streamURL={localStreamRef.current.toURL()}
@@ -271,20 +312,20 @@ const VideocallScreen = ({ route, navigation }) => {
         />
       )}
 
-      {/* Top timer */}
       <View style={styles.timerPill}>
         <Text style={styles.timerText}>
           {connectedUI
-            ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(
-                2,
-                '0',
-              )}`
+            ? `${Math.floor(seconds / 60)}:${String(
+                seconds % 60,
+              ).padStart(2, '0')}`
             : 'Connecting…'}
         </Text>
       </View>
 
-      {/* Bottom floating bar */}
-      <LinearGradient colors={['#1b1b1b', '#101010']} style={styles.bottomBar}>
+      <LinearGradient
+        colors={['#1b1b1b', '#101010']}
+        style={styles.bottomBar}
+      >
         <RoundBtn
           id="speaker"
           activeBtn={activeBtn}
@@ -292,6 +333,7 @@ const VideocallScreen = ({ route, navigation }) => {
           icon={speakerOn ? 'volume-high' : 'volume-mute'}
           onPress={toggleSpeaker}
         />
+
 
         <RoundBtn
           id="mic"
@@ -322,35 +364,63 @@ const VideocallScreen = ({ route, navigation }) => {
           activeBtn={activeBtn}
           setActiveBtn={setActiveBtn}
           icon="call"
-          onPress={() => setShowEndModal(true)}
+ onPress={() => {
+
+  if (!connectedUI) {
+    stopCallMedia();
+    leaveScreen();
+    return;
+  }
+
+  // Tell server to end call
+  socketRef.current?.emit('video_call_hangup', { session_id });
+
+}}
+
           large
         />
       </LinearGradient>
 
-      {/* End call modal */}
-      <EndCallConfirmModal
-        visible={showEndModal}
-        onCancel={() => setShowEndModal(false)}
-        onConfirm={() => {
-          setShowEndModal(false);
-          cleanup(true);
-        }}
-      />
+   <EndCallConfirmModal
+  visible={showEndModal}
+  otherUser={other}
+  onCancel={() => {
+    setShowEndModal(false);
+    leaveScreen();
+  }}
+  onConfirm={(rating) => {
+
+    setShowEndModal(false);
+
+    dispatch(
+      submitRatingRequest({
+        session_id,
+        rated_user_id: other?.user_id,
+        rating,
+        duration: seconds
+      })
+    );
+
+    leaveScreen();
+  }}
+/>
+
+
     </View>
   );
 };
 
+/* ---------------- ROUND BUTTON ---------------- */
+
 const RoundBtn = ({ id, icon, onPress, large, activeBtn, setActiveBtn }) => {
   const isActive = activeBtn === id;
 
-  const handlePress = () => {
-    setActiveBtn(id);
-    onPress && onPress();
-  };
-
   return (
     <TouchableOpacity
-      onPress={handlePress}
+      onPress={() => {
+        setActiveBtn(id);
+        onPress && onPress();
+      }}
       activeOpacity={0.9}
       style={[
         styles.roundBtn,
@@ -371,18 +441,11 @@ const RoundBtn = ({ id, icon, onPress, large, activeBtn, setActiveBtn }) => {
 
 export default VideocallScreen;
 
-/* ================= STYLES ================= */
+/* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-
-  remote: {
-    flex: 1,
-  },
-
+  container: { flex: 1, backgroundColor: '#000' },
+  remote: { flex: 1 },
   local: {
     position: 'absolute',
     top: 70,
@@ -395,7 +458,6 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
     zIndex: 10,
   },
-
   timerPill: {
     position: 'absolute',
     top: 40,
@@ -404,15 +466,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
-    zIndex: 20,
   },
-
-  timerText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
+  timerText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   bottomBar: {
     position: 'absolute',
     bottom: 24,
@@ -423,9 +478,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-evenly',
-    paddingHorizontal: 12,
   },
-
   roundBtn: {
     width: 52,
     height: 52,
@@ -433,7 +486,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   endBtn: {
     width: 64,
     height: 64,

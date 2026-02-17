@@ -44,4 +44,5 @@ export const chatListApi = `${MAIN_BASE_URL}/api/chat/list`;
 export const chatReadConversationApi =`${MAIN_BASE_URL}/api/chat/read/conversation`;
 
 
+export const RATING_POST_URL  =`${MAIN_BASE_URL}/api/rating/submit`;
 

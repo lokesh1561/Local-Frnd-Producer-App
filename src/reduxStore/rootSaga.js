@@ -14,6 +14,7 @@ import lifestyleSaga from "../features/lifeStyle/lifestyleSaga"
 // import userLifestyleSaga from"../features/lifeStyle/lifestyleSaga"
 import otherusersSaga from "../features/Otherusers/otherUserSaga"
 import chatSaga from "../features/chat/chatSaga"
+import ratingSaga from "../features/rating/ratingSaga"
 
 
 export default function* rootSaga() {
@@ -32,6 +33,8 @@ export default function* rootSaga() {
     // lifestyleOptionsSaga(),
     // userLifestyleSaga(),
     otherusersSaga(),
-    chatSaga()
+    chatSaga(),
+        ratingSaga(),
+
   ]);
 }

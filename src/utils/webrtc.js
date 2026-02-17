@@ -33,9 +33,18 @@ export const createPC = ({ onIceCandidate, onTrack, onIceState }) => {
     };
 
     pc.oniceconnectionstatechange = () => {
-      console.log("🌐 ICE State:", pc.iceConnectionState);
-      onIceState?.(pc.iceConnectionState);
-    };
+  console.log("🌐 ICE State:", pc.iceConnectionState);
+
+  onIceState?.(pc.iceConnectionState);
+
+  if (
+    pc.iceConnectionState === "failed" ||
+    pc.iceConnectionState === "disconnected" ||
+    pc.iceConnectionState === "closed"
+  ) {
+    console.log("❌ ICE connection lost");
+  }
+};
 
     pc.onsignalingstatechange = () => {
       console.log("📡 Signaling State:", pc.signalingState);

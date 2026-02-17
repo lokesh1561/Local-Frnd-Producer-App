@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/Ionicons";
 import Svg, { Path } from "react-native-svg";
-import { userOtpRequest } from "../features/Auth/authAction";
+import { userLoginRequest, userOtpRequest } from "../features/Auth/authAction";
 import { useDispatch, useSelector } from "react-redux";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -29,7 +29,22 @@ const OtpScreen = ({ route, navigation }) => {
 
   const mobile_number = route?.params?.mobile_number;
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(""));
+  const [timer, setTimer] = useState(15);
+const [canResend, setCanResend] = useState(false);
+
   const inputRefs = useRef([]);
+useEffect(() => {
+  if (timer === 0) {
+    setCanResend(true);
+    return;
+  }
+
+  const interval = setInterval(() => {
+    setTimer((prev) => prev - 1);
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, [timer]);
 
   useEffect(() => {
     if (!mobile_number) {
@@ -69,6 +84,8 @@ const OtpScreen = ({ route, navigation }) => {
 
     dispatch(userOtpRequest({ mobile_number, otp: otpString }));
   };
+
+
 
   useEffect(() => {
     if (!Otp) return;
@@ -131,6 +148,14 @@ const OtpScreen = ({ route, navigation }) => {
     handleSuccess();
 
   }, [Otp]);
+const handleResend = () => {
+  if (!canResend) return;
+
+  dispatch(userLoginRequest({ mobile_number })); // or resend action
+
+  setTimer(15);
+  setCanResend(false);
+};
 
   return (
     <KeyboardAvoidingView
@@ -196,7 +221,15 @@ const OtpScreen = ({ route, navigation }) => {
             ))}
           </View>
 
-          <Text style={styles.resendText}>Resend in 10 Sec.</Text>
+          {/* <Text style={styles.resendText}>Resend in 10 Sec.</Text> */}
+{!canResend ? (
+  <Text style={styles.resendText}>Resend in {timer} Sec.</Text>
+) : (
+  <TouchableOpacity onPress={handleResend}>
+    <Text style={styles.resendText}>Resend OTP</Text>
+  </TouchableOpacity>
+)}
+
 
           <TouchableOpacity
             style={styles.continueButton}
