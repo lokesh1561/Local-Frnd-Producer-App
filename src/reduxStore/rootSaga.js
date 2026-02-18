@@ -10,8 +10,8 @@ import callSaga from "../features/calls/callSaga";
 import friendSaga from "../features/friend/friendSaga";
 import interestSaga from "../features/interest/interestSaga"
 import lifestyleSaga from "../features/lifeStyle/lifestyleSaga"
-import lifestyleOptionsSaga from "../features/lifeStyle/lifestyleSaga"
-import userLifestyleSaga from"../features/lifeStyle/lifestyleSaga"
+// import lifestyleOptionsSaga from "../features/lifeStyle/lifestyleSaga"
+// import userLifestyleSaga from"../features/lifeStyle/lifestyleSaga"
 import otherusersSaga from "../features/Otherusers/otherUserSaga"
 import chatSaga from "../features/chat/chatSaga"
 import ratingSaga from "../features/rating/ratingSaga"
@@ -30,8 +30,8 @@ export default function* rootSaga() {
     locationSaga(),
     interestSaga(),
     lifestyleSaga(),
-    lifestyleOptionsSaga(),
-    userLifestyleSaga(),
+    // lifestyleOptionsSaga(),
+    // userLifestyleSaga(),
     otherusersSaga(),
     chatSaga(),
         ratingSaga(),

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   View,
@@ -47,9 +47,12 @@ const EditProfileScreen = () => {
   const { userdata } = useSelector((state) => state.user);
     const { newUserData } = useSelector((state) => state.user);
 
-    console.log(newUserData)
-console.log(userdata)
+    const {  message: apiResponse } = useSelector(
+        (state) => state.user
+      );
+console.log(apiResponse)
   /* ===== BASIC INFO ===== */
+  
   const [profileImg, setProfileImg] = useState(null);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -123,26 +126,29 @@ const formatDateForApi = (date) => {
 
   return `${year}-${month}-${day}`; // YYYY-MM-DD
 };
+
+
   /* ================= REFRESH FIX ================= */
- useFocusEffect(
+const isFormInitialized = useRef(false);
+
+useFocusEffect(
   useCallback(() => {
-    if (!userdata) return;
+    if (!userdata || isFormInitialized.current) return;
 
-    console.log("🔄 EditProfileScreen refreshed");
+    console.log("🟢 Initializing EditProfile form");
 
-    // BASIC INFO
+    // BASIC INFO (ONLY ONCE)
     setProfileImg(userdata?.images?.avatar ?? null);
     setFullName(userdata?.user?.name ?? "");
     setUsername(userdata?.user?.username ?? "");
     setEmail(userdata?.user?.email ?? "");
-setDob(formatDateForApi(userdata?.user?.date_of_birth));
-setGender(userdata?.user?.gender ?? "Female");
-
+    setDob(formatDateForApi(userdata?.user?.date_of_birth));
+    setGender(userdata?.user?.gender ?? "Female");
 
     // LANGUAGE
     setLanguage(userdata?.language?.native_name ?? "");
 
-    // LOCATION (ONLY ONCE)
+    // LOCATION
     const city = userdata?.location?.city;
     const state = userdata?.location?.state;
     const country = userdata?.location?.country;
@@ -167,18 +173,17 @@ setGender(userdata?.user?.gender ?? "Female");
           name: item.subcategory.name,
         }))
       );
-    } else {
-      setSelectedLifestyles([]);
     }
 
     // INTERESTS
     if (userdata?.interests?.length) {
       setSelectedInterests(userdata.interests);
-    } else {
-      setSelectedInterests([]);
     }
-  }, [route.params?.refresh, userdata])
+
+    isFormInitialized.current = true; // 🔒 LOCK IT
+  }, [userdata])
 );
+
 
 
 const onDateChange = (event, selectedDate) => {
@@ -231,11 +236,38 @@ const onDateChange = (event, selectedDate) => {
   // 🔥 DISPATCH API CALL
   dispatch(newUserDataRequest(payload));
 };
+const [isResponseHandled, setIsResponseHandled] = useState(false);
+
+ useEffect(() => {
+  if (!apiResponse || isResponseHandled) return;
+
+  setIsResponseHandled(true); // ✅ stop future alerts
+
+  Alert.alert(
+    apiResponse.success ? "Success ✅" : "Error ❌",
+    apiResponse.message,
+    [
+      {
+        text: "OK",
+        onPress: () => {
+          if (apiResponse.success) {
+            navigation.goBack();
+          }
+        },
+      },
+    ]
+  );
+}, [apiResponse, isResponseHandled]);
+
 useEffect(() => {
-  if (newUserData?.success) {
-    navigation.goBack();
-  }
-}, [newUserData]);
+  const unsubscribe = navigation.addListener("focus", () => {
+    setIsResponseHandled(false);
+  });
+
+  return unsubscribe;
+}, [navigation]);
+
+
 
   const interestText = selectedInterests.map((i) => i.name).join(", ");
 const handleDeleteImage = (photo_id) => {
@@ -384,22 +416,37 @@ const handleDeleteImage = (photo_id) => {
               setOpenSection={setOpenSection}
             />
 
-            {openSection === "lifestyle" && (
-              <View style={styles.generalContainer}>
-                {userdata?.lifestyles?.map((item, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.selectInput}
-                    onPress={openLifestyle}
-                  >
-                    <Text>
-                      {item.category.name} : {item.subcategory.name}
-                    </Text>
-                    <Icon name="chevron-down" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
+           {openSection === "lifestyle" && (
+  <View style={styles.generalContainer}>
+    {userdata?.lifestyles && userdata.lifestyles.length > 0 ? (
+      userdata.lifestyles.map((item, index) => (
+        <TouchableOpacity
+          key={index}
+          style={styles.selectInput}
+          onPress={openLifestyle}
+        >
+          <Text>
+            {item.category.name} : {item.subcategory.name}
+          </Text>
+          <Icon name="chevron-down" />
+        </TouchableOpacity>
+      ))
+    ) : (
+      <View style={styles.emptyLifestyleBox}>
+        <Text style={styles.emptyText}>
+          No lifestyle available
+        </Text>
+
+        <TouchableOpacity
+          style={styles.addNowBtn}
+          onPress={openLifestyle}
+        >
+          <Text style={styles.addNowText}>Add Now</Text>
+        </TouchableOpacity>
+      </View>
+    )}
+  </View>
+)}
 
             {/* INTEREST */}
             <AccordionHeader
@@ -554,127 +601,32 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", padding: 16 },
   headerTitle: { fontSize: 20, fontWeight: "600", marginLeft: 10 },
   avatarSection: { alignItems: "center", marginVertical: 24 },
-  avatarRing: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: PURPLE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  avatarRing: {width: 120,height: 120,borderRadius: 60,borderWidth: 4,borderColor: PURPLE,alignItems: "center",justifyContent: "center",},
   avatar: { width: 95, height: 95, borderRadius: 48 },
-  cameraBtn: {
-    position: "absolute",
-    bottom: 6,
-    right: 6,
-    backgroundColor: PURPLE,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  form: { paddingHorizontal: 20 },
-  label: { marginTop: 14, marginBottom: 6, color: "#444" },
-  inputBox: {
-    backgroundColor: "#FAFAFA",
-    borderRadius: 28,
-    paddingHorizontal: 18,
-    height: 50,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#eee",
-  },
+  cameraBtn:{position: "absolute",bottom: 6,right: 6,backgroundColor: PURPLE,width: 30,height: 30,borderRadius: 15,alignItems: "center",justifyContent: "center",},
+  form:{ paddingHorizontal: 20 },
+  label:{ marginTop: 14, marginBottom: 6, color: "#444" },
+  inputBox:{backgroundColor:"#FAFAFA",borderRadius:28,paddingHorizontal:18,height: 50,flexDirection:"row",alignItems: "center",borderWidth:1,borderColor: "#eee",},
   input: { flex: 1 },
   genderRow: { flexDirection: "row", marginTop: 8 },
-  genderItem: { flexDirection: "row", alignItems: "center", marginRight: 30 },
-  radio: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: "#ccc",
-    marginRight: 6,
-  },
+  genderItem: { flexDirection: "row", alignItems: "center", marginRight:30 },
+  radio:{width: 18,height: 18,borderRadius: 9,borderWidth: 2,borderColor:"#ccc",marginRight: 6,},
   radioActive: { borderColor: PURPLE },
-  radioDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: PURPLE,
-    alignSelf: "center",
-    marginTop: 3,
-  },
-  accordionRow: {
-    marginTop: 26,
-    paddingVertical: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  accordionTitle: { fontSize: 15, fontWeight: "600" },
-  accordionArrow: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: PURPLE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  radioDot:{width:8,height:8,borderRadius:4,backgroundColor:PURPLE,alignSelf:"center",marginTop: 3,},
+  accordionRow:{marginTop:26,paddingVertical:14,flexDirection:"row",justifyContent:"space-between",borderBottomWidth:1,borderBottomColor:"#F0F0F0",},
+  accordionTitle:{ fontSize: 15, fontWeight: "600" },
+  accordionArrow:{width:26,height: 26,borderRadius: 13,backgroundColor:PURPLE,alignItems:"center",justifyContent:"center",},
   saveWrapper: { marginVertical: 30 },
-  saveBtn: {
-    backgroundColor: PURPLE,
-    height: 54,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  saveText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  generalContainer: { marginTop: 12 },
-  selectInput: {
-    height: 48,
-    backgroundColor: "#FAFAFA",
-    borderRadius: 25,
-    paddingHorizontal: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#eee",
-    marginBottom: 14,
-  },
-  sectionTitle: {
-  marginTop: 26,
-  marginBottom: 12,
-  fontSize: 15,
-  fontWeight: "600",
-},
+  saveBtn:{backgroundColor:PURPLE,height: 54,borderRadius: 30,alignItems:"center",justifyContent:"center",},
+  saveText:{color: "#fff", fontSize: 16, fontWeight: "700" },
+  generalContainer:{ marginTop: 12 },
+  selectInput:{height:48,backgroundColor:"#FAFAFA",borderRadius:25,paddingHorizontal:18,flexDirection:"row",alignItems:"center",justifyContent:"space-between",borderWidth:1,borderColor: "#eee",
+    marginBottom: 14,  },
+  sectionTitle: {marginTop:26,marginBottom:12,fontSize:15,fontWeight: "600",},
+galleryGrid: {flexDirection: "row",flexWrap: "wrap",justifyContent: "space-between",},
+galleryItem:{width: "48%",height: 140,borderRadius: 16,marginBottom: 12,backgroundColor: "#F2F2F2",overflow: "hidden",alignItems: "center",justifyContent:"center",},
 
-galleryGrid: {
-  flexDirection: "row",
-  flexWrap: "wrap",
-  justifyContent: "space-between",
-},
-
-galleryItem: {
-  width: "48%",
-  height: 140,
-  borderRadius: 16,
-  marginBottom: 12,
-  backgroundColor: "#F2F2F2",
-  overflow: "hidden",
-  alignItems: "center",
-  justifyContent: "center",
-},
-
-galleryImage: {
-  width: "100%",
-  height: "100%",
-  resizeMode: "cover",
-},
+galleryImage:{width: "100%",height: "100%",resizeMode: "cover",},
 
 
 emptyGallery: {
@@ -698,5 +650,28 @@ deleteBtn: {
   alignItems: "center",
   justifyContent: "center",
 },
+emptyLifestyleBox: {
+  alignItems: "center",
+  paddingVertical: 20,
+},
+
+emptyText: {
+  color: "#999",
+  marginBottom: 10,
+  fontSize: 14,
+},
+
+addNowBtn: {
+  paddingHorizontal: 20,
+  paddingVertical: 8,
+  borderRadius: 20,
+  backgroundColor: "#B832F9",
+},
+
+addNowText: {
+  color: "#fff",
+  fontWeight: "600",
+},
+
 
 });
