@@ -269,11 +269,13 @@ dottedOrbit: {
     borderRadius: 45,
   },
   textContainer: {
-    marginTop: 70,
+    marginTop: 100,
     alignItems: "center",
   },
   title: {
-    fontSize: 18,
+    fontFamily:"Lexend",
+    fontStyle:"semi-bold",
+    fontSize: 20,
     fontWeight: "700",
     color: "#111",
   },

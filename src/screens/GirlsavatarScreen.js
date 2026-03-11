@@ -15,6 +15,8 @@ import { useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { newUserDataRequest } from "../features/user/userAction";
 import WelcomeScreenbackgroundgpage from"../components/BackgroundPages/WelcomeScreenbackgroungpage.js"
+import Icon from "react-native-vector-icons/Ionicons";
+
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = (width - 40) / 3;
 
@@ -75,7 +77,7 @@ const ChooseAvatarScreen = () => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
             >
-            <Text style={styles.backIcon}>‹</Text>
+            <Icon name="chevron-back" size={26} color="#000" />
           </TouchableOpacity>
 
           <Text style={styles.title}>Choose your Avatar</Text>
@@ -129,9 +131,9 @@ const styles = StyleSheet.create({
   backButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: "#555",
+    // borderRadius: 18,
+    // borderWidth: 1,
+    // borderColor: "#555",
     justifyContent: "center",
     alignItems: "center",
   },

@@ -44,6 +44,7 @@ const FillYourProfileScreen = ({ navigation, route }) => {
   const [showLanguageDrop, setShowLanguageDrop] = useState(false);
   const [showStateDrop, setShowStateDrop] = useState(false);
   const [showCityDrop, setShowCityDrop] = useState(false);
+
   const [showMandatoryMsg, setShowMandatoryMsg] = useState(true);
   const [isResponseHandled, setIsResponseHandled] = useState(false);
 
@@ -131,7 +132,7 @@ const FillYourProfileScreen = ({ navigation, route }) => {
         },
       ]
     );
-  }, [apiResponse, isResponseHandled, navigation]);
+  }, [apiResponse]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
@@ -151,12 +152,14 @@ const FillYourProfileScreen = ({ navigation, route }) => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Icon name="chevron-back" size={26} color="#000" />
+            <Icon name="chevron-back" size={width * 0.06} color="#000" />
           </TouchableOpacity>
 
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: height * 0.18 }}
+            nestedScrollEnabled={true}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: height * 0.1 }}
           >
             <Text style={styles.title}>Fill Your Profile</Text>
 
@@ -182,13 +185,14 @@ const FillYourProfileScreen = ({ navigation, route }) => {
               onChangeText={setUsername}
             />
 
+            {/* DOB */}
             <Text style={styles.label}>Date of Birth</Text>
             <TouchableOpacity
               style={styles.inputIconBox}
               onPress={() => setShowDatePicker(true)}
             >
               <Text style={{ flex: 1 }}>{dob || "DD/MM/YYYY"}</Text>
-              <Icon name="calendar-outline" size={20} />
+              <Icon name="calendar-outline" size={width * 0.05} />
             </TouchableOpacity>
 
             {showDatePicker && (
@@ -199,10 +203,8 @@ const FillYourProfileScreen = ({ navigation, route }) => {
                 onChange={(event, selectedDate) => {
                   setShowDatePicker(false);
                   if (selectedDate) {
-                    const day = selectedDate.getDate().toString().padStart(2, "0");
-                    const month = (selectedDate.getMonth() + 1)
-                      .toString()
-                      .padStart(2, "0");
+                    const day = selectedDate.getDate().toString().padStart(2,"0");
+                    const month = (selectedDate.getMonth()+1).toString().padStart(2,"0");
                     const year = selectedDate.getFullYear();
                     setDob(`${day}-${month}-${year}`);
                   }
@@ -212,20 +214,28 @@ const FillYourProfileScreen = ({ navigation, route }) => {
 
             <Text style={styles.sectionTitle}>General Information</Text>
 
-            {/* Language */}
+            {/* LANGUAGE */}
             <Text style={styles.label}>Language</Text>
             <TouchableOpacity
               style={styles.dropdown}
-              onPress={() => setShowLanguageDrop(!showLanguageDrop)}
+              onPress={() => {
+                setShowLanguageDrop(!showLanguageDrop);
+                setShowStateDrop(false);
+                setShowCityDrop(false);
+              }}
             >
               <Text style={styles.dropdownText}>
                 {language?.native_name || "Select Language"}
               </Text>
-              <Icon name="chevron-down" size={20} color="#666" />
+              <Icon name="chevron-down" size={width * 0.05} />
             </TouchableOpacity>
 
             {showLanguageDrop && (
-              <View style={styles.dropdownList}>
+              <ScrollView
+                style={styles.dropdownList}
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+              >
                 {(languages || []).map((item) => (
                   <TouchableOpacity
                     key={item.id}
@@ -240,23 +250,31 @@ const FillYourProfileScreen = ({ navigation, route }) => {
                     </Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
             )}
 
-            {/* State */}
+            {/* STATE */}
             <Text style={styles.label}>State</Text>
             <TouchableOpacity
               style={styles.dropdown}
-              onPress={() => setShowStateDrop(!showStateDrop)}
+              onPress={() => {
+                setShowStateDrop(!showStateDrop);
+                setShowLanguageDrop(false);
+                setShowCityDrop(false);
+              }}
             >
               <Text style={styles.dropdownText}>
                 {stateValue?.name || "Select State"}
               </Text>
-              <Icon name="chevron-down" size={20} color="#666" />
+              <Icon name="chevron-down" size={width * 0.05} />
             </TouchableOpacity>
 
             {showStateDrop && (
-              <View style={styles.dropdownList}>
+              <ScrollView
+                style={styles.dropdownList}
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+              >
                 {(states || []).map((item) => (
                   <TouchableOpacity
                     key={item.id}
@@ -268,28 +286,34 @@ const FillYourProfileScreen = ({ navigation, route }) => {
                       setShowStateDrop(false);
                     }}
                   >
-                    <Text style={styles.dropdownItemText}>
-                      {item.name}
-                    </Text>
+                    <Text style={styles.dropdownItemText}>{item.name}</Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
             )}
 
-            {/* City */}
+            {/* CITY */}
             <Text style={styles.label}>City</Text>
             <TouchableOpacity
               style={styles.dropdown}
-              onPress={() => setShowCityDrop(!showCityDrop)}
+              onPress={() => {
+                setShowCityDrop(!showCityDrop);
+                setShowStateDrop(false);
+                setShowLanguageDrop(false);
+              }}
             >
               <Text style={styles.dropdownText}>
                 {cityValue?.name || "Select City"}
               </Text>
-              <Icon name="chevron-down" size={20} color="#666" />
+              <Icon name="chevron-down" size={width * 0.05} />
             </TouchableOpacity>
 
             {showCityDrop && (
-              <View style={styles.dropdownList}>
+              <ScrollView
+                style={styles.dropdownList}
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+              >
                 {(cities || []).map((item) => (
                   <TouchableOpacity
                     key={item.id}
@@ -299,34 +323,23 @@ const FillYourProfileScreen = ({ navigation, route }) => {
                       setShowCityDrop(false);
                     }}
                   >
-                    <Text style={styles.dropdownItemText}>
-                      {item.name}
-                    </Text>
+                    <Text style={styles.dropdownItemText}>{item.name}</Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
             )}
-          </ScrollView>
 
-          <TouchableOpacity
-            style={[
-              styles.continueButton,
-              { backgroundColor: isFormValid ? "#B45BFA" : "#D3C8F6" },
-            ]}
-            disabled={!isFormValid}
-            onPress={handleSubmit}
-          >
-            <Text
+            <TouchableOpacity
               style={[
-                styles.continueText,
-                { color: isFormValid ? "#fff" : "#eee" },
+                styles.continueButton,
+                { backgroundColor: isFormValid ? "#B45BFA" : "#D3C8F6" },
               ]}
+              disabled={!isFormValid}
+              onPress={handleSubmit}
             >
-              CONTINUE
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.bottomIndicator} />
+              <Text style={styles.continueText}>CONTINUE</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </WelcomeScreenbackgroundgpage>
@@ -334,89 +347,96 @@ const FillYourProfileScreen = ({ navigation, route }) => {
 };
 
 export default FillYourProfileScreen;
+
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingTop: height * 0.08, paddingHorizontal: 20 },
-  backButton: { position: "absolute", top: height * 0.07, left: 15, zIndex: 10 },
+  container: { flex: 1, paddingTop: height * 0.08, paddingHorizontal: width * 0.05 },
+
+  backButton: {
+    position: "absolute",
+    top: height * 0.07,
+    left: width * 0.04,
+    zIndex: 10,
+  },
+
   title: {
-    fontSize: 22,
+    fontSize: width * 0.055,
     fontWeight: "700",
     textAlign: "center",
-    marginBottom: 30,
-    color: "#111",
+    marginBottom: height * 0.04,
   },
+
   input: {
     backgroundColor: "#fff",
-    height: 48,
+    height: height * 0.06,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E3D8FF",
-    paddingHorizontal: 12,
-    fontSize: 16,
-    marginBottom: 15,
+    paddingHorizontal: width * 0.03,
+    marginBottom: height * 0.02,
   },
+
   inputIconBox: {
     backgroundColor: "#fff",
     flexDirection: "row",
     alignItems: "center",
-    height: 48,
+    height: height * 0.06,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E3D8FF",
-    paddingHorizontal: 12,
-    marginBottom: 15,
+    paddingHorizontal: width * 0.03,
+    marginBottom: height * 0.02,
   },
+
   sectionTitle: {
-    fontSize: 16,
+    fontSize: width * 0.045,
     fontWeight: "600",
-    marginTop: 10,
-    marginBottom: 8,
+    marginTop: height * 0.015,
   },
+
   dropdown: {
     backgroundColor: "#fff",
-    height: 48,
+    height: height * 0.06,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E3D8FF",
-    paddingHorizontal: 12,
+    paddingHorizontal: width * 0.03,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: height * 0.015,
   },
-  label: { fontSize: 14, fontWeight: "600", marginBottom: 6, marginTop: 5 },
-  dropdownText: { flex: 1, fontSize: 16, color: "#000" },
+
+  label: { fontSize: width * 0.035, fontWeight: "600" },
+
+  dropdownText: { flex: 1, fontSize: width * 0.04 },
+
   dropdownList: {
-    backgroundColor: "#FFF",
+    maxHeight: height * 0.25,
+    backgroundColor: "#fff",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#E3D8FF",
-    maxHeight: 160,
-    marginBottom: 15,
+    marginBottom: height * 0.02,
   },
-  dropdownItem: { paddingVertical: 12, paddingHorizontal: 12 },
-  dropdownItemText: { fontSize: 16 },
+
+  dropdownItem: {
+    paddingVertical: height * 0.015,
+    paddingHorizontal: width * 0.03,
+  },
+
+  dropdownItemText: { fontSize: width * 0.04 },
+
   continueButton: {
-    position: "absolute",
-    bottom: 50,
-    width: width - 40,
-    alignSelf: "center",
+    marginTop: height * 0.02,
     borderRadius: 10,
-    paddingVertical: 14,
+    paddingVertical: height * 0.02,
     alignItems: "center",
   },
-  continueText: { fontWeight: "700", fontSize: 16 },
-  bottomIndicator: {
-    position: "absolute",
-    bottom: 10,
-    width: 80,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#aaa",
-    alignSelf: "center",
-  },
+
+  continueText: { color: "#fff", fontWeight: "700", fontSize: width * 0.04 },
+
   mandatoryText: {
     color: "red",
-    fontSize: 13,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: height * 0.01,
   },
 });

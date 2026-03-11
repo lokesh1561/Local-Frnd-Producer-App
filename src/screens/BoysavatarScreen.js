@@ -11,11 +11,12 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
 import { newUserDataRequest } from "../features/user/userAction";
 import WelcomeScreenbackgroundgpage from "../components/BackgroundPages/WelcomeScreenbackgroungpage";
-
+import Icon from "react-native-vector-icons/Ionicons";
 const { width } = Dimensions.get("window");
 const ITEM_SIZE = (width - 40) / 3;
 
@@ -111,7 +112,7 @@ const BoysavatarScreen = ({ navigation }) => {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.backIcon}>‹</Text>
+            <Icon name="chevron-back" size={26} color="#000" />
           </TouchableOpacity>
 
           <Text style={styles.title}>Choose your Avatar</Text>
@@ -160,8 +161,8 @@ const styles = StyleSheet.create({
   backButton: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
+    // borderRadius: 18,
+    // borderWidth: 1,
     borderColor: "#0c0c0c",
     justifyContent: "center",
     alignItems: "center",

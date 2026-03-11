@@ -10,7 +10,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode"; 
 import WelcomeScreenbackgroundgpage from "../components/BackgroundPages/WelcomeScreenbackgroungpage";
-
+import { Easing } from 'react-native';
 const rotatingItems = [
   { id: 1, type: "image", src: require("../assets/boy1.jpg"), size: 52, angle: 2 },
   { id: 2, type: "icon", src: require("../assets/callicon.png"), size: 30, angle: 80 },
@@ -21,21 +21,23 @@ const rotatingItems = [
   { id: 7, type: "icon", src: require("../assets/Videocharticon.png"), size: 70, angle: 40 },
 ];
 
-const RADIUS = 133;
+const RADIUS = 126;
 
 const WelcomeScreen02 = ({ navigation }) => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   /* 🔄 ROTATION ANIMATION */
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 12000,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, []);
+      Animated.loop(
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 30000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    }, []);
+  
 
   const nextfunction = async () => {
     try {
@@ -194,8 +196,9 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   dottedCircle: {
+    marginTop:-30,
     width: 270,
-    height: 270,
+    height: 260,
     borderRadius: 140,
     borderWidth: 2,
     borderColor: "#C78CFF",
@@ -211,11 +214,11 @@ const styles = StyleSheet.create({
   },
 
   textContainer: {
-    marginTop: 40,
+    marginTop: 90,
     alignItems: "center",
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700",
     color: "#111",
     textAlign: "center",

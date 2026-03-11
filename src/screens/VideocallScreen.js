@@ -130,7 +130,7 @@ const { loading: ratingLoading, success: ratingSuccess } = ratingState;
 
       socket.on('video_offer', onOffer);
       socket.on('video_answer', onAnswer);
-      socket.on('video_ice_candidate', onIce);
+      socket.on('video_ice_candidate', onIce); 
 socket.on('video_call_ended', () => {
 
   // Stop call for BOTH users

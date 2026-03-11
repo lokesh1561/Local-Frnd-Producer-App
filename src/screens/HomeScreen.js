@@ -202,15 +202,16 @@ const HomeScreen = () => {
           <LikeMindedSectionScreen />
           <ActiveDostSectionScreen />
 
+
           <BottomCallPills
             callingRandom={callingRandom}
             callingRandomVideo={callingRandomVideo}
             onRandomAudio={startRandomAudioCall}
             onRandomVideo={startRandomVideoCall}
           />
-
-          <View style={{ height: hp(12) }} />
+          <View  style={{ height: hp(10) }} />
         </ScrollView>
+
       </View>
     </WelcomeScreenbackgroungpage>
   );

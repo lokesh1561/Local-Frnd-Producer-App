@@ -1,4 +1,4 @@
-import React, { useContext ,useCallback} from "react";
+import React, { useContext, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Ionicons";
@@ -15,6 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { SocketContext } from "../socket/SocketProvider";
 import { useFocusEffect } from "@react-navigation/native";
+import WelcomeScreenbackgroungpage from "../components/BackgroundPages/WelcomeScreenbackgroungpage";
 
 const { width } = Dimensions.get("window");
 
@@ -23,29 +23,34 @@ const ProfileScreen = () => {
   const dispatch = useDispatch();
   const { socketRef } = useContext(SocketContext);
 
-  // 🔥 REDUX USER DATA
   const { userdata } = useSelector((state) => state.user);
-useFocusEffect(
-  useCallback(() => {
-    dispatch({ type: "USER_DATA_REQUEST" });
-  }, [])
-);
+
+  console.log(userdata);
+
+  useFocusEffect(
+    useCallback(() => {
+      dispatch({ type: "USER_DATA_REQUEST" });
+    }, [])
+  );
 
   return (
+    <WelcomeScreenbackgroungpage>
+
     <SafeAreaView style={styles.safe}>
       {/* ================= TOP PURPLE SECTION ================= */}
       <View style={styles.topBg}>
-        {/* HEART BACKGROUND (NO TOUCH) */}
+        {/* HEART BACKGROUND */}
         <Image
           pointerEvents="none"
           source={require("../assets/leftheart.png")}
           style={styles.leftHeart}
-        />
+          />
+
         <Image
           pointerEvents="none"
           source={require("../assets/rightheart.png")}
           style={styles.rightHeart}
-        />
+          />
 
         {/* HEADER */}
         <View style={styles.header}>
@@ -57,11 +62,16 @@ useFocusEffect(
           <Text style={styles.headerTitle}>Profile</Text>
         </View>
 
-        {/* AVATAR */}
+        {/* ================= AVATAR ================= */}
         <View style={styles.avatarWrap}>
           <View style={styles.avatarRing}>
             <Image
-              source={require("../assets/boy1.jpg")}
+              source={{
+                uri:
+                userdata?.images?.avatar ||
+                userdata?.images?.profile_image ||
+                "https://i.pravatar.cc/150?img=12",
+              }}
               style={styles.avatar}
             />
           </View>
@@ -73,7 +83,7 @@ useFocusEffect(
             style={styles.editCircle}
             activeOpacity={0.7}
             onPress={() => navigation.navigate("EditProfileScreen")}
-          >
+            >
             <Icon name="pencil" size={14} color="#fff" />
           </TouchableOpacity>
 
@@ -82,13 +92,13 @@ useFocusEffect(
           </Text>
         </View>
 
-        {/* WHITE CURVE (NO TOUCH) */}
+        {/* WHITE CURVE */}
         <Svg
           pointerEvents="none"
           width={width}
           height={140}
           style={{ position: "absolute", bottom: -1 }}
-        >
+          >
           <Path
             d={`
               M0 80
@@ -96,9 +106,9 @@ useFocusEffect(
               L ${width} 140
               L 0 140
               Z
-            `}
-            fill="#FFFFFF"
-          />
+              `}
+              fill="#FFFFFF"
+              />
         </Svg>
       </View>
 
@@ -117,7 +127,7 @@ useFocusEffect(
             color="#FF5A5A"
             title="Invite Friends"
             sub="Invite your friends and earn Flashnotes!"
-          />
+            />
 
           <Item
             icon="settings-outline"
@@ -125,7 +135,7 @@ useFocusEffect(
             title="App Settings"
             sub="Manage your notifications, connected accounts.."
             onPress={() => navigation.navigate("SettingScreen")}
-          />
+            />
 
           <Item
             icon="help-circle-outline"
@@ -133,25 +143,25 @@ useFocusEffect(
             title="Need Help?"
             sub="FAQ, tutorial and contact"
             onPress={() => navigation.navigate("HelpCenterScreen")}
-          />
+            />
         </View>
       </View>
     </SafeAreaView>
+            </WelcomeScreenbackgroungpage>
   );
 };
 
 /* ================= LIST ITEM ================= */
+
 const Item = ({ icon, color, title, sub, onPress }) => (
-  <TouchableOpacity
-    style={styles.item}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
+  <TouchableOpacity style={styles.item} onPress={onPress} activeOpacity={0.7}>
     <Icon name={icon} size={22} color={color} />
+
     <View style={{ flex: 1, marginLeft: 12 }}>
       <Text style={styles.itemTitle}>{title}</Text>
       <Text style={styles.itemSub}>{sub}</Text>
     </View>
+
     <Icon name="chevron-forward" size={18} color="#aaa" />
   </TouchableOpacity>
 );
@@ -159,13 +169,12 @@ const Item = ({ icon, color, title, sub, onPress }) => (
 export default ProfileScreen;
 
 /* ================= STYLES ================= */
+
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
 
-  /* TOP PURPLE */
   topBg: {
     height: 300,
     backgroundColor: "#F5E1FF",
@@ -244,7 +253,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
 
-  /* WHITE CONTENT */
   content: {
     flex: 1,
     backgroundColor: "#FFFFFF",
