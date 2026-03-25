@@ -174,11 +174,7 @@ const tempMessage = {
   delivered: 0,
   is_read: 0,
 };
-  // ✅ CORRECT DISPATCH
-  dispatch(chatMessageAdd({
-    otherUserId: user.user_id,
-    message: tempMessage,
-  }));
+
 
   // ✅ SOCKET SEND
   socketRef.current?.emit('chat_send', {
