@@ -39,11 +39,13 @@ export default function BuyCoinsScreen() {
     dispatch(getCoinsRequest());
   }, []);
 
-  /* 🔥 UPDATED CARD DESIGN */
+  /* 🔥 PERFECT CARD DESIGN */
   const renderItem = ({ item }) => (
     <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper}>
       <LinearGradient
-        colors={["#4C1D95", "#9333EA"]}
+        colors={["#7C3AED","#D946EF"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         style={styles.newCard}
       >
         {/* TITLE */}
@@ -58,21 +60,23 @@ export default function BuyCoinsScreen() {
         />
 
         {/* PRICE */}
-        <View style={{ alignItems: "center" }}>
-          <Text style={styles.oldPrice}>
-            ₹{item?.original_price}
-          </Text>
+        <Text style={styles.newPrice}>
+          Only {" "} 
 
-          <Text style={styles.newPrice}>
-            Only ₹{item?.price_after_discount}
-          </Text>
-        </View>
+  <Text style={styles.rupee}>₹</Text>
+          {item?.price_after_discount}
+        </Text>
 
         {/* BUTTON */}
         <TouchableOpacity style={styles.claimBtn}>
           <Text style={styles.claimText}>
             Claim {item?.coins}
           </Text>
+
+          <Image
+            source={require("../assets/normalmulticoin.png")}
+            style={styles.btnCoin}
+          />
         </TouchableOpacity>
       </LinearGradient>
     </TouchableOpacity>
@@ -94,7 +98,6 @@ export default function BuyCoinsScreen() {
         }}
         ListHeaderComponent={
           <>
-            {/* HEADER */}
             <View style={styles.topRow}>
               <View style={styles.coinContainer}>
                 <View style={styles.orangeBadge}>
@@ -121,11 +124,9 @@ export default function BuyCoinsScreen() {
               </View>
             </View>
 
-            {/* TITLE */}
             <Text style={styles.lokalText}>Lokal frnd</Text>
             <Text style={styles.buyCoinsText}>Buy Coins</Text>
 
-            {/* OFFERS */}
             <Text style={styles.offerText}>Offers</Text>
 
             <LinearGradient
@@ -139,7 +140,6 @@ export default function BuyCoinsScreen() {
               <View style={styles.inactiveDot} />
             </View>
 
-            {/* BANNER */}
             <Image
               source={require("../assets/blackfriday.png")}
               style={styles.blackBanner}
@@ -149,7 +149,6 @@ export default function BuyCoinsScreen() {
         }
       />
 
-      {/* BOTTOM BAR */}
       <View style={styles.bottomWrapper}>
         <View style={styles.bottomContainer}>
           <TouchableOpacity onPress={() => navigation.navigate("Home")}>
@@ -175,57 +174,66 @@ export default function BuyCoinsScreen() {
   );
 }
 
-/* STYLES */
-
 const styles = StyleSheet.create({
-  /* 🔥 NEW CARD */
   newCard: {
-    borderRadius: wp(5),
-    padding: wp(3),
-    height: hp(24),
+    borderRadius: wp(6),
+    paddingVertical: hp(2),
+    paddingHorizontal: wp(2),
+    height: hp(26),
     justifyContent: "space-between",
     alignItems: "center",
+    shadowColor: "#7C3AED",
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 10,
   },
 
   newTitle: {
     color: "#fff",
-    fontSize: wp(3.5),
-    fontWeight: "700",
+    fontSize: wp(3.8),
+    fontWeight: "800",
     textAlign: "center",
   },
 
   newCoin: {
-    width: wp(18),
-    height: wp(18),
+    width: wp(20),
+    height: wp(20),
     resizeMode: "contain",
-  },
-
-  oldPrice: {
-    color: "#ddd",
-    textDecorationLine: "line-through",
-    fontSize: wp(3),
   },
 
   newPrice: {
     color: "#fff",
-    fontSize: wp(4),
+    fontSize: wp(3.5),
     fontWeight: "800",
+    
   },
 
   claimBtn: {
-    backgroundColor: "#fff",
-    borderRadius: wp(5),
-    paddingVertical: hp(0.8),
-    paddingHorizontal: wp(4),
-  },
+    backgroundColor: "#481162",
+    borderRadius: wp(10),
+    paddingVertical: hp(1),
+    paddingHorizontal: wp(5),
+    flexDirection: "row",
+    alignItems: "center",
+      gap: wp(1), // spacing between text & coin (🔥 best way)
 
+  },
+rupee: {
+  color: "#FACC15", // gold/yellow color 🔥
+  fontWeight: "900",
+},
   claimText: {
-    color: "#6B21A8",
-    fontWeight: "800",
-    fontSize: wp(3.5),
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: wp(2.5),
   },
 
-  /* EXISTING */
+  btnCoin: {
+    width: wp(4),
+    height: wp(4),
+    marginLeft: wp(0.2),
+  },
+
   cardWrapper: {
     width: wp(30),
     margin: wp(1.5),
